@@ -27,10 +27,10 @@ async function getWeatherDataOWM() {
 
   const data = await res.json()
 
-  const values: number[] = Array.from(data.list.map((x) =>
+  const values: number[] = Array.from(data.list.map((x: { snow: { [x: string]: any; }; }) =>
     x.snow?.['3h'] ?? 0
   ))
-  const dates: string[] = Array.from(data.list.map((x) =>
+  const dates: string[] = Array.from(data.list.map((x: { dt: number; }) =>
     dayjs(x.dt * 1000).format("ddd ha")
   ))
 

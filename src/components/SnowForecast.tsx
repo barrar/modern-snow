@@ -1,7 +1,7 @@
 'use client'
 import { BarChart } from "@mui/x-charts";
 
-const SnowForecast = ({ data }) => {
+const SnowForecast = ({ data }: { data: any }) => {
 
     // dayjs().format()
 
