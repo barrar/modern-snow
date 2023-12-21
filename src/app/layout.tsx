@@ -18,7 +18,8 @@ export default function RootLayout({
     <html>
       <body className={inter.className}>
         <div className="flex">
-          {children}</div>
+          {children}
+        </div>
       </body>
     </html>
   )
