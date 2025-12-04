@@ -20,6 +20,6 @@
 - Follow ESLint defaults (run `npm run lint`); keep imports ordered by origin (React/Next → third-party → local).
 
 ## Testing Guidelines
-- No automated test harness is committed yet; when adding behavior, prefer colocated `.test.ts(x)` files using the tooling you introduce (Jest + React Testing Library are good defaults).
-- For now, verify changes by running `npm run lint` and manually exercising `/` in dev; document manual steps in PRs.
+- No tests exist
+- For now, verify changes by running `npm run lint`
 - When testing data code, capture a fixture of the NOAA response to avoid network flakiness.
