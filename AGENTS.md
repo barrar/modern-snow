@@ -1,8 +1,8 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Next.js 14 App Router lives in `src/app`; `layout.tsx` wires global styles, `page.tsx` renders the snow forecast shell, and `globals.css` holds Tailwind setup plus root colors.
-- Reusable UI sits in `src/components`; mark interactive pieces with `'use client'` (e.g., `CustomChart.tsx` wraps Recharts).
+- Next.js App Router lives in `src/app`; `layout.tsx` wires global styles, `page.tsx` renders the snow forecast shell, and `globals.css` holds global styles.
+- Reusable UI sits in `src/components`; mark interactive pieces with `'use client'` (e.g., `CustomChart.tsx` uses MUI X Charts).
 - Data fetching and server actions belong in `src/data`; `getWeatherData.tsx` pulls NOAA snowfall data with a 10s revalidate window and the required user agent header.
 - Keep feature-specific assets near their feature; prefer co-locating helpers beside the component that consumes them.
 
@@ -13,10 +13,10 @@
 - `npm run lint` — Next/ESLint checks; run before pushing to catch style and safety issues.
 
 ## Coding Style & Naming Conventions
-- TypeScript-first; default to server components, add `'use client'` only when browser APIs or third-party client libs (Recharts) are needed.
+- TypeScript-first; default to server components, add `'use client'` only when browser APIs or client-only libraries (MUI X Charts) are needed.
 - Components and React files use PascalCase filenames (`CustomChart.tsx`); helpers and server utilities use camelCase (`getWeatherData`).
 - Favor concise functions, async/await for data access, and keep fetch headers/caching explicit.
-- Use Tailwind utility classes for layout/styling; keep new global styles minimal and scoped through `globals.css` when necessary.
+- Use MUI components + `sx` for layout/styling; keep global styles minimal and scoped through `globals.css` when necessary.
 - Follow ESLint defaults (run `npm run lint`); keep imports ordered by origin (React/Next → third-party → local).
 
 ## Testing Guidelines

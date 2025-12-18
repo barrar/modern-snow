@@ -6,7 +6,7 @@ import { BarChart } from '@mui/x-charts/BarChart'
 import {
     ChartsTooltipContainer,
     type ChartsTooltipProps,
-    useItemTooltip,
+    useAxesTooltip,
 } from '@mui/x-charts/ChartsTooltip'
 import type { ForecastPoint } from '../data/getWeatherData'
 
@@ -28,17 +28,18 @@ const warningTone = (point: ForecastPoint) => {
 type TooltipProps = ChartsTooltipProps & { points: ForecastPoint[] }
 
 const ForecastTooltip = ({ points, ...props }: TooltipProps) => {
-    const tooltip = useItemTooltip<'bar'>()
+    const tooltips = useAxesTooltip({ directions: ['x'] })
+    const tooltip = tooltips?.[0]
     if (!tooltip) return null
 
-    const point = points[tooltip.identifier.dataIndex]
+    const point = points[tooltip.dataIndex]
     if (!point) return null
     const tone = warningTone(point)
 
     return (
         <ChartsTooltipContainer
             {...props}
-            trigger="item"
+            trigger="axis"
             placement="right-start"
         >
             <Paper
@@ -266,7 +267,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                 }}>
                 <Stack spacing={2} sx={{ mb: 1 }}>
                     <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
-                        <Typography variant="h5">72-hour snowfall outlook</Typography>
+                        <Typography variant="h5">Snowfall outlook</Typography>
                         <Chip label="NOAA · Live" size="small" color="secondary" variant="outlined" />
                     </Stack>
                     <Typography variant="body2" color="text.secondary">
@@ -333,6 +334,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                             },
                         ]}
                         grid={{ horizontal: true }}
+                        axisHighlight={{ x: 'band', y: 'none' }}
                         margin={{ top: 24, right: 24, bottom: 32, left: 12 }}
                         borderRadius={10}
                         hideLegend
@@ -342,7 +344,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                             ),
                         }}
                         slotProps={{
-                            tooltip: { trigger: 'item' },
+                            tooltip: { trigger: 'axis' },
                             barLabel: { style: { fill: '#e5edff', fontSize: 12, fontWeight: 700 } },
                         }}
                     />

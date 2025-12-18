@@ -1,4 +1,4 @@
-import { Box, Chip, Container, Paper, Stack, Typography } from '@mui/material'
+import { Box, Container, Paper, Stack, Typography } from '@mui/material'
 import { Suspense } from 'react'
 import SnowForecast from '../components/SnowForecast'
 
@@ -17,18 +17,12 @@ export default async function Page() {
               boxShadow: '0 30px 80px rgba(6, 12, 28, 0.35)',
             }}>
             <Stack spacing={2.5}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Chip label="Mt. Bachelor" color="primary" variant="outlined" size="small" />
-                <Chip label="Live NOAA feed" color="secondary" size="small" />
-                <Chip label="Bluebird detector" variant="filled" size="small" />
-              </Stack>
               <Stack spacing={1}>
                 <Typography variant="h3" component="h1">
-                  Snow outlook, reimagined
+                  Mt. Bachelor snow forecast
                 </Typography>
                 <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 820 }}>
-                  We surface powder windows, precipitation warnings, and daypart details in one modern view so you
-                  can chase the cleanest turns without refreshing a dozen tabs.
+                  A quick, visual snowfall outlook for Mt. Bachelor in Bend, Oregon—powered by live NOAA data.
                 </Typography>
               </Stack>
             </Stack>
