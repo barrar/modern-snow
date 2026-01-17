@@ -2,6 +2,7 @@ import { Box, Container, Paper, Stack, Typography } from '@mui/material'
 import { Suspense } from 'react'
 import LocationMenu from '../components/LocationMenu'
 import SnowForecast from '../components/SnowForecast'
+import { surfaceGradient } from '../data/chartStyles'
 import { forecastLocations, getForecastLocation } from '../data/forecastLocations'
 
 type PageProps = {
@@ -23,10 +24,8 @@ export default async function Page({ searchParams }: PageProps) {
             elevation={0}
             sx={{
               p: { xs: 3, md: 4 },
-              borderRadius: 4,
-              background: 'linear-gradient(135deg, rgba(19,33,61,0.9), rgba(30,58,138,0.9))',
-              border: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: '0 30px 80px rgba(6, 12, 28, 0.35)',
+              background: surfaceGradient,
+              boxShadow: '0 20px 50px rgba(6, 12, 28, 0.35)',
             }}>
             <Stack spacing={2.5}>
               <Stack

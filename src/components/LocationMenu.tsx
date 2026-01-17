@@ -29,7 +29,13 @@ export default function LocationMenu({ locations, value }: LocationMenuProps) {
     }
 
     return (
-        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 280 } }}>
+        <FormControl
+            size="small"
+            sx={{
+                minWidth: { xs: '100%', sm: 280 },
+                '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' },
+            }}
+        >
             <InputLabel id="location-select-label">Location</InputLabel>
             <Select
                 labelId="location-select-label"

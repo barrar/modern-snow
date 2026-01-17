@@ -18,9 +18,6 @@ const theme = createTheme({
             secondary: '#c6d4f5',
         },
     },
-    shape: {
-        borderRadius: 16,
-    },
     typography: {
         fontFamily: 'var(--font-body, "Inter", "Helvetica Neue", Arial, sans-serif)',
         h1: { fontWeight: 700 },

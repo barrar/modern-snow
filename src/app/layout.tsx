@@ -1,4 +1,3 @@
-import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import ThemeRegistry from '../components/ThemeRegistry'
@@ -19,7 +18,6 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className={inter.className}>
         <ThemeRegistry>
-          <div className="grain" aria-hidden />
           {children}
         </ThemeRegistry>
       </body>

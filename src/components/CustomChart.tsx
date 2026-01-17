@@ -1,18 +1,30 @@
 'use client'
 
 import { Box, Chip, Divider, Grid, Paper, Stack, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
 import { BarPlot } from '@mui/x-charts/BarChart'
 import { ChartContainer } from '@mui/x-charts/ChartContainer'
 import { ChartsGrid } from '@mui/x-charts/ChartsGrid'
-import { ChartsXAxis } from '@mui/x-charts/ChartsXAxis'
-import { ChartsYAxis } from '@mui/x-charts/ChartsYAxis'
-import { LinePlot } from '@mui/x-charts/LineChart'
 import {
     ChartsTooltipContainer,
     useAxesTooltip,
 } from '@mui/x-charts/ChartsTooltip'
+import { ChartsXAxis } from '@mui/x-charts/ChartsXAxis'
+import { ChartsYAxis } from '@mui/x-charts/ChartsYAxis'
+import { LinePlot } from '@mui/x-charts/LineChart'
+import { chartColors, surfaceGradient, tooltipGradient } from '../data/chartStyles'
 import type { ForecastPoint } from '../data/getWeatherData'
+
+const panelSx = {
+    p: 3,
+    background: surfaceGradient,
+    boxShadow: '0 18px 48px rgba(6, 12, 28, 0.4)',
+}
+
+const chartPanelSx = {
+    p: { xs: 2.5, md: 3.5 },
+    background: surfaceGradient,
+    boxShadow: '0 24px 60px rgba(6, 12, 28, 0.45)',
+}
 
 const warningTone = (point: ForecastPoint) => {
     if (point.alert === 'rain') return { label: 'Rain risk', color: 'error' as const }
@@ -37,10 +49,8 @@ const ForecastTooltip = ({ points }: { points: ForecastPoint[] }) => {
             sx={{
                 p: 2.25,
                 minWidth: 220,
-                borderRadius: 2,
                 backdropFilter: 'blur(14px)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                background: 'linear-gradient(140deg, rgba(15,23,42,0.85), rgba(22,28,52,0.92))',
+                background: tooltipGradient,
                 boxShadow: '0 22px 60px rgba(4, 6, 18, 0.55)',
             }}>
             <Stack spacing={1.25}>
@@ -140,32 +150,32 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
     const consolidatedWarnings = Array.from(warningMap.values())
         .sort((a, b) => a.startIndex - b.startIndex)
 
-        const alertDotColor = (alert: ForecastPoint['alert']) => {
-            if (alert === 'rain') return '#f87171'
-            if (alert === 'light-precip') return '#fbbf24'
-            if (alert === 'snow-ongoing') return '#93c5fd'
-            return '#a5b4fc'
-        }
-    
-        const rainBands = (() => {
-            const bands: { start: number; end: number }[] = []
-            let current: { start: number; end: number } | null = null
-    
-            data.forEach((point, idx) => {
-                if (point.alert === 'rain') {
-                    if (!current) {
-                        current = { start: idx, end: idx }
-                        bands.push(current)
-                    } else {
-                        current.end = idx
-                    }
+    const alertDotColor = (alert: ForecastPoint['alert']) => {
+        if (alert === 'rain') return chartColors.alertRain
+        if (alert === 'light-precip') return chartColors.alertLight
+        if (alert === 'snow-ongoing') return chartColors.alertSnow
+        return chartColors.alertDefault
+    }
+
+    const rainBands = (() => {
+        const bands: { start: number; end: number }[] = []
+        let current: { start: number; end: number } | null = null
+
+        data.forEach((point, idx) => {
+            if (point.alert === 'rain') {
+                if (!current) {
+                    current = { start: idx, end: idx }
+                    bands.push(current)
                 } else {
-                    current = null
+                    current.end = idx
                 }
-            })
-    
-            return bands
-        })()
+            } else {
+                current = null
+            }
+        })
+
+        return bands
+    })()
 
     const weatherSeries = [
         {
@@ -174,7 +184,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
             type: 'line' as const,
             dataKey: 'temperatureF',
             yAxisId: 'weather',
-            color: '#fbbf24',
+            color: chartColors.temperature,
             valueFormatter: (value: number | null) => value == null ? '' : `${Math.round(value)}°F`,
             showMark: false,
         },
@@ -184,7 +194,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
             type: 'line' as const,
             dataKey: 'windMph',
             yAxisId: 'weather',
-            color: '#22c55e',
+            color: chartColors.wind,
             valueFormatter: (value: number | null) => value == null ? '' : `${value} mph`,
             showMark: false,
         },
@@ -194,7 +204,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
             type: 'line' as const,
             dataKey: 'cloudCover',
             yAxisId: 'weather',
-            color: '#a855f7',
+            color: chartColors.cloud,
             valueFormatter: (value: number | null) => value == null ? '' : `${value}%`,
             showMark: false,
         },
@@ -208,7 +218,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
             dataKey: 'inches',
             yAxisId: 'snow',
             minBarSize: 6,
-            color: '#5da2ff',
+            color: chartColors.snow,
             valueFormatter: (value: number | null) => value == null ? '' : `${value}"`,
             barLabel: ({ value }: { value: number | null }) => value == null || value === 0 ? null : `${value}`,
             barLabelPlacement: 'outside' as const,
@@ -217,8 +227,8 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
     ]
 
     const legendItems = [
-        { id: 'snowfall', label: 'Snow (in)', color: '#5da2ff' },
-        ...weatherSeries,
+        { id: 'snowfall', label: 'Snow (in)', color: chartColors.snow },
+        ...weatherSeries.map(({ id, label, color }) => ({ id, label, color })),
     ]
 
     return (
@@ -227,13 +237,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Paper
                         elevation={0}
-                        sx={{
-                            p: 3,
-                            borderRadius: 3,
-                            background: 'linear-gradient(145deg, rgba(51,107,255,0.15), rgba(12,22,43,0.85))',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            boxShadow: '0 18px 48px rgba(4, 8, 20, 0.5)',
-                        }}>
+                        sx={panelSx}>
                         <Stack spacing={1.5}>
                             <Typography variant="subtitle2" color="text.secondary" fontWeight={700}>
                                 Bluebird windows
@@ -247,7 +251,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                                             color="primary"
                                             variant="outlined"
                                             size="small"
-                                            sx={{ borderColor: alpha('#60a5fa', 0.4), color: '#dbeafe' }}
+                                            sx={{ color: '#dbeafe' }}
                                         />
                                     ))}
                                 </Stack>
@@ -263,13 +267,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Paper
                         elevation={0}
-                        sx={{
-                            p: 3,
-                            borderRadius: 3,
-                            background: 'linear-gradient(145deg, rgba(245,158,11,0.12), rgba(12,22,43,0.9))',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            boxShadow: '0 18px 48px rgba(4, 8, 20, 0.5)',
-                        }}>
+                        sx={panelSx}>
                         <Stack spacing={1.5}>
                             <Typography variant="subtitle2" color="text.secondary" fontWeight={700}>
                                 Warnings
@@ -287,7 +285,6 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                                                     width: 8,
                                                     height: 8,
                                                     mt: 0.75,
-                                                    borderRadius: '50%',
                                                     backgroundColor: alertDotColor(warning.alert),
                                                 }}
                                             />
@@ -319,20 +316,28 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
 
             <Paper
                 elevation={0}
-                sx={{
-                    p: { xs: 2.5, md: 3.5 },
-                    borderRadius: 4,
-                    background: 'linear-gradient(160deg, rgba(255,255,255,0.06), rgba(8,13,26,0.95))',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    boxShadow: '0 32px 90px rgba(0, 0, 0, 0.45)',
-                }}>
-                <Stack sx={{ mb: 1 }}>
-                    <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
-                        <Typography variant="h5">Snowfall outlook</Typography>
+                sx={chartPanelSx}>
+
+
+                <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} sx={{ mt: 2 }}>
+                    <Stack sx={{ mb: 1 }}>
+                        <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
+                            <Typography variant="h5">Snowfall outlook</Typography>
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                            Bars show expected snowfall, lines show temperature, wind, and cloud cover.
+                        </Typography>
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">
-                        Bars show expected snowfall for each window; lines show temperature, wind, and cloud cover.
-                    </Typography>
+                    <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="flex-end">
+                        {legendItems.map((series) => (
+                            <Stack key={series.id} direction="row" spacing={0.75} alignItems="center">
+                                <Box sx={{ width: 10, height: 10, backgroundColor: series.color }} />
+                                <Typography variant="caption">
+                                    {series.label}
+                                </Typography>
+                            </Stack>
+                        ))}
+                    </Stack>
                 </Stack>
 
                 <Box sx={{ position: 'relative', height: 520 }}>
@@ -344,7 +349,6 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                             left: 12,
                             right: 24,
                             pointerEvents: 'none',
-                            borderRadius: 1.5,
                             overflow: 'hidden',
                         }}>
                         {rainBands.map((band, idx) => {
@@ -359,10 +363,10 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                                         bottom: 0,
                                         left: `${left}%`,
                                         width: `${width}%`,
-                                        background: 'linear-gradient(180deg, rgba(244,67,54,0.18) 0%, rgba(244,67,54,0.07) 100%)',
+                                        background: chartColors.rainBand.fill,
                                         backdropFilter: 'blur(2px)',
-                                        borderLeft: '1px solid rgba(244,67,54,0.4)',
-                                        borderRight: '1px solid rgba(244,67,54,0.25)',
+                                        borderLeft: `1px solid ${chartColors.rainBand.borderLeft}`,
+                                        borderRight: `1px solid ${chartColors.rainBand.borderRight}`,
                                     }}
                                 />
                             )
@@ -381,6 +385,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                         yAxis={[
                             {
                                 id: 'snow',
+                                position: 'none',
                                 label: 'Snow (inches)',
                                 labelStyle: { fill: '#cbd5f5', fontSize: 12 },
                                 tickLabelStyle: { fill: '#cbd5f5', fontSize: 12 },
@@ -388,7 +393,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                             {
                                 id: 'weather',
                                 label: 'Temp / Wind / Cloud',
-                                position: 'right',
+                                position: 'left',
                                 labelStyle: { fill: '#cbd5f5', fontSize: 12 },
                                 tickLabelStyle: { fill: '#cbd5f5', fontSize: 12 },
                             },
@@ -410,19 +415,6 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                         </ChartsTooltipContainer>
                     </ChartContainer>
                 </Box>
-
-                <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-                    <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="flex-end">
-                        {legendItems.map((series) => (
-                            <Stack key={series.id} direction="row" spacing={0.75} alignItems="center">
-                                <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: series.color }} />
-                                <Typography variant="caption">
-                                    {series.label}
-                                </Typography>
-                            </Stack>
-                        ))}
-                    </Stack>
-                </Stack>
             </Paper>
         </Stack>
     )

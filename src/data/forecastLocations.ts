@@ -1,5 +1,7 @@
+export type ForecastLocationId = 'bachelor' | 'caribou-kcar'
+
 export type ForecastLocation = {
-    id: string
+    id: ForecastLocationId
     label: string
     title: string
     description: string
@@ -23,7 +25,9 @@ export const forecastLocations: ForecastLocation[] = [
     },
 ]
 
+export const defaultLocationId: ForecastLocationId = 'bachelor'
+
 export const getForecastLocation = (id?: string) => {
-    const targetId = id ?? 'bachelor'
+    const targetId = id ?? defaultLocationId
     return forecastLocations.find((location) => location.id === targetId) ?? forecastLocations[0]
 }
