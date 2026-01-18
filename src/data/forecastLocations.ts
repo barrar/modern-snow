@@ -1,4 +1,4 @@
-export type ForecastLocationId = 'bachelor' | 'caribou-kcar'
+export type ForecastLocationId = 'bachelor' | 'caribou-kcar' | 'bar-harbor'
 
 export type ForecastLocation = {
     id: ForecastLocationId
@@ -22,6 +22,13 @@ export const forecastLocations: ForecastLocation[] = [
         title: 'Caribou snow forecast',
         description: 'A quick, visual snowfall outlook for Caribou Municipal Airport in Maine',
         gridpoints: { office: 'CAR', x: 71, y: 163 },
+    },
+    {
+        id: 'bar-harbor',
+        label: 'Bar Harbor',
+        title: 'Bar Harbor snow forecast',
+        description: 'A quick, visual snowfall outlook for Bar Harbor, Maine',
+        gridpoints: { office: 'CAR', x: 117, y: 69 },
     },
 ]
 

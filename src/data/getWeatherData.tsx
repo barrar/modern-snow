@@ -1,9 +1,74 @@
 "use server"
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc"
+import { createClient } from "redis"
 import { getForecastLocation, type ForecastLocationId } from "./forecastLocations"
 
 dayjs.extend(utc)
+
+const CACHE_TTL_MS = 60 * 60 * 1000
+const CACHE_TTL_SECONDS = 60 * 60
+
+type RedisClient = ReturnType<typeof createClient>
+
+let redisClient: RedisClient | null = null
+let redisClientPromise: Promise<RedisClient | null> | null = null
+
+const getRedisClient = async (): Promise<RedisClient | null> => {
+    const redisUrl = process.env.REDIS_URL
+    if (!redisUrl) return null
+    if (redisClient) return redisClient
+    if (!redisClientPromise) {
+        const client = createClient({ url: redisUrl })
+        redisClientPromise = client.connect()
+            .then(() => {
+                redisClient = client
+                return client
+            })
+            .catch((error) => {
+                redisClientPromise = null
+                console.warn("Failed to connect to Redis", error)
+                return null
+            })
+    }
+    return redisClientPromise
+}
+
+type CachedGridData = {
+    fetchedAt: number
+    data: unknown
+}
+
+const buildCacheKey = (location: ReturnType<typeof getForecastLocation>) => (
+    `weather-grid:${location.gridpoints.office}:${location.gridpoints.x},${location.gridpoints.y}`
+)
+
+const readCachedGridData = async (cacheKey: string) => {
+    const client = await getRedisClient()
+    if (!client) return null
+    try {
+        const cached = await client.get(cacheKey)
+        if (!cached) return null
+        const parsed = JSON.parse(cached) as CachedGridData
+        if (!parsed?.fetchedAt || parsed.data == null) return null
+        if (Date.now() - parsed.fetchedAt > CACHE_TTL_MS) return null
+        return parsed.data
+    } catch (error) {
+        console.warn("Redis cache read failed", error)
+        return null
+    }
+}
+
+const writeCachedGridData = async (cacheKey: string, data: unknown) => {
+    const client = await getRedisClient()
+    if (!client) return
+    try {
+        const payload: CachedGridData = { fetchedAt: Date.now(), data }
+        await client.set(cacheKey, JSON.stringify(payload), { EX: CACHE_TTL_SECONDS })
+    } catch (error) {
+        console.warn("Redis cache write failed", error)
+    }
+}
 
 type NOAAValue = { validTime: string; value: number | string | null }
 
@@ -20,7 +85,6 @@ export type ForecastPoint = {
     hasFreshPowder: boolean
     isBluebird: boolean
     alert: 'rain' | 'light-precip' | 'snow-ongoing' | null
-    warning: string | null
 }
 
 const parseNumber = (value: number | string | null | undefined) => {
@@ -96,17 +160,23 @@ const fillNearest = (times: string[], values: Array<number | null>) => {
 
 export async function getWeatherData(locationId?: ForecastLocationId): Promise<ForecastPoint[]> {
     const location = getForecastLocation(locationId)
-    const res = await fetch(
-        `https://api.weather.gov/gridpoints/${location.gridpoints.office}/${location.gridpoints.x},${location.gridpoints.y}`,
-        {
-            headers: { 'user-agent': '(modernsnow.com, contact@modernsnow.com)' },
-            next: { revalidate: 10 }
+    const cacheKey = buildCacheKey(location)
+    const cachedData = await readCachedGridData(cacheKey)
+    const data = cachedData ?? await (async () => {
+        const res = await fetch(
+            `https://api.weather.gov/gridpoints/${location.gridpoints.office}/${location.gridpoints.x},${location.gridpoints.y}`,
+            {
+                headers: { 'user-agent': '(modernsnow.com, contact@modernsnow.com)' },
+                next: { revalidate: 10 }
+            }
+        )
+        if (!res.ok) {
+            throw new Error('Failed to fetch data')
         }
-    )
-    if (!res.ok) {
-        throw new Error('Failed to fetch data')
-    }
-    const data = await res.json()
+        const json = await res.json()
+        await writeCachedGridData(cacheKey, json)
+        return json
+    })()
 
     const snowfall = (data.properties.snowfallAmount?.values ?? []) as NOAAValue[]
     const quantitativePrecip = (data.properties.quantitativePrecipitation?.values ?? []) as NOAAValue[]
@@ -173,15 +243,6 @@ export async function getWeatherData(locationId?: ForecastLocationId): Promise<F
                 minorPrecip ? 'light-precip' :
                     hasPrecip ? 'snow-ongoing' : null
 
-        const warning =
-            alert === 'rain'
-                ? 'Rain expected — conditions will be wet.'
-                : alert === 'light-precip'
-                    ? 'Light precip in this window; mostly clear but keep an eye out.'
-                    : alert === 'snow-ongoing'
-                        ? 'Snow continues during this window.'
-                        : null
-
         const isBluebird = hasFreshPowder && (!hasPrecip || minorPrecip)
 
         return {
@@ -199,7 +260,6 @@ export async function getWeatherData(locationId?: ForecastLocationId): Promise<F
             hasFreshPowder,
             isBluebird,
             alert,
-            warning,
         }
     })
         .slice(0, 22)

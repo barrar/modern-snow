@@ -13,11 +13,12 @@
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.6",
     "@mui/material-nextjs": "^7.3.6",
-    "@mui/x-charts": "^8.22.0",
     "dayjs": "^1.11.10",
     "next": "^16.0.10",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "recharts": "^3.6.0",
+    "redis": "^5.10.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.4",

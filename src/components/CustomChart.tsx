@@ -1,16 +1,18 @@
 'use client'
 
 import { Box, Chip, Divider, Grid, Paper, Stack, Typography } from '@mui/material'
-import { BarPlot } from '@mui/x-charts/BarChart'
-import { ChartContainer } from '@mui/x-charts/ChartContainer'
-import { ChartsGrid } from '@mui/x-charts/ChartsGrid'
+import type { LabelProps, TooltipContentProps } from 'recharts'
 import {
-    ChartsTooltipContainer,
-    useAxesTooltip,
-} from '@mui/x-charts/ChartsTooltip'
-import { ChartsXAxis } from '@mui/x-charts/ChartsXAxis'
-import { ChartsYAxis } from '@mui/x-charts/ChartsYAxis'
-import { LinePlot } from '@mui/x-charts/LineChart'
+    Bar,
+    CartesianGrid,
+    ComposedChart,
+    LabelList,
+    Line,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts'
 import { chartColors, surfaceGradient, tooltipGradient } from '../data/chartStyles'
 import type { ForecastPoint } from '../data/getWeatherData'
 
@@ -34,14 +36,59 @@ const warningTone = (point: ForecastPoint) => {
     return null
 }
 
-const ForecastTooltip = ({ points }: { points: ForecastPoint[] }) => {
-    const tooltips = useAxesTooltip({ directions: ['x'] })
-    const tooltip = tooltips?.[0]
-    if (!tooltip) return null
+const renderSnowLabel = ({ x, y, width, value }: LabelProps) => {
+    if (value == null) return null
+    const numeric = typeof value === 'number' ? value : Number(value)
+    if (!Number.isFinite(numeric) || numeric === 0) return null
+    if (typeof x !== 'number' || typeof y !== 'number' || typeof width !== 'number') return null
 
-    const point = points[tooltip.dataIndex]
+    return (
+        <text
+            x={x + width / 2}
+            y={y - 6}
+            textAnchor="middle"
+            fill="#e5edff"
+            fontSize={12}
+            fontWeight={700}>
+            {numeric}
+        </text>
+    )
+}
+
+type ForecastTooltipProps = TooltipContentProps<number, string> & {
+    points: ForecastPoint[]
+}
+
+const ForecastTooltip = ({ active, payload, activeIndex, points }: ForecastTooltipProps) => {
+    if (!active) return null
+    const payloadPoint = payload?.[0]?.payload as ForecastPoint | undefined
+    const fallbackPoint = typeof activeIndex === 'number' ? points[activeIndex] : undefined
+    const point = payloadPoint ?? fallbackPoint
     if (!point) return null
     const tone = warningTone(point)
+    const precipDotColor = point.precipitationType === 'rain'
+        ? chartColors.alertRain
+        : point.precipitationType === 'snow'
+            ? chartColors.snow
+            : chartColors.alertDefault
+
+    const MetricRow = ({ label, value, color }: { label: string; value: React.ReactNode; color: string }) => (
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center">
+                <Box
+                    sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: color,
+                        boxShadow: '0 0 8px rgba(15, 23, 42, 0.45)',
+                    }}
+                />
+                <Typography variant="body2" color="text.secondary">{label}</Typography>
+            </Stack>
+            <Typography variant="subtitle1" fontWeight={700}>{value}</Typography>
+        </Stack>
+    )
 
     return (
         <Paper
@@ -69,44 +116,45 @@ const ForecastTooltip = ({ points }: { points: ForecastPoint[] }) => {
                 </Stack>
                 <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
                 <Stack spacing={0.75}>
-                    <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">Snow</Typography>
-                        <Typography variant="subtitle1" fontWeight={700}>{point.inches ?? 0}&quot;</Typography>
-                    </Stack>
-                    <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">Precip</Typography>
-                        <Typography variant="subtitle1" fontWeight={700}>{point.precipInches ?? 0}&quot;</Typography>
-                    </Stack>
+                    <MetricRow
+                        label="Snow"
+                        value={`${point.inches ?? 0}"`}
+                        color={chartColors.snow}
+                    />
+                    <MetricRow
+                        label="Precip"
+                        value={`${point.precipInches ?? 0}"`}
+                        color={precipDotColor}
+                    />
                     {point.precipProbability != null && (
-                        <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" color="text.secondary">Precip chance</Typography>
-                            <Typography variant="subtitle1" fontWeight={700}>{point.precipProbability}%</Typography>
-                        </Stack>
+                        <MetricRow
+                            label="Rain chance"
+                            value={`${point.precipProbability}%`}
+                            color={chartColors.precipProbability}
+                        />
                     )}
                     {point.temperatureF != null && (
-                        <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" color="text.secondary">Temperature</Typography>
-                            <Typography variant="subtitle1" fontWeight={700}>{Math.round(point.temperatureF)}°F</Typography>
-                        </Stack>
+                        <MetricRow
+                            label="Temperature"
+                            value={`${Math.round(point.temperatureF)}°F`}
+                            color={chartColors.temperature}
+                        />
                     )}
                     {point.windMph != null && (
-                        <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" color="text.secondary">Wind</Typography>
-                            <Typography variant="subtitle1" fontWeight={700}>{point.windMph} mph</Typography>
-                        </Stack>
+                        <MetricRow
+                            label="Wind"
+                            value={`${point.windMph} mph`}
+                            color={chartColors.wind}
+                        />
                     )}
                     {point.cloudCover != null && (
-                        <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" color="text.secondary">Cloud cover</Typography>
-                            <Typography variant="subtitle1" fontWeight={700}>{point.cloudCover}%</Typography>
-                        </Stack>
+                        <MetricRow
+                            label="Cloud cover"
+                            value={`${point.cloudCover}%`}
+                            color={chartColors.cloud}
+                        />
                     )}
                 </Stack>
-                {point.warning && (
-                    <Typography variant="body2" sx={{ color: 'warning.light' }}>
-                        {point.warning}
-                    </Typography>
-                )}
             </Stack>
         </Paper>
     )
@@ -116,7 +164,6 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
     const bluebirdWindows = data.filter((point) => point.isBluebird)
     const warningMap = new Map<NonNullable<ForecastPoint['alert']>, {
         alert: NonNullable<ForecastPoint['alert']>
-        warning: string | null
         startIndex: number
         endIndex: number
         startLabel: string
@@ -129,7 +176,6 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
         if (!existing) {
             warningMap.set(point.alert, {
                 alert: point.alert,
-                warning: point.warning,
                 startIndex: idx,
                 endIndex: idx,
                 startLabel: point.time,
@@ -177,54 +223,29 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
         return bands
     })()
 
-    const weatherSeries = [
-        {
-            id: 'temperature',
-            label: 'Temp (°F)',
-            type: 'line' as const,
-            dataKey: 'temperatureF',
-            yAxisId: 'weather',
-            color: chartColors.temperature,
-            valueFormatter: (value: number | null) => value == null ? '' : `${Math.round(value)}°F`,
-            showMark: false,
-        },
-        {
-            id: 'wind',
-            label: 'Wind (mph)',
-            type: 'line' as const,
-            dataKey: 'windMph',
-            yAxisId: 'weather',
-            color: chartColors.wind,
-            valueFormatter: (value: number | null) => value == null ? '' : `${value} mph`,
-            showMark: false,
-        },
-        {
-            id: 'cloud',
-            label: 'Cloud cover (%)',
-            type: 'line' as const,
-            dataKey: 'cloudCover',
-            yAxisId: 'weather',
-            color: chartColors.cloud,
-            valueFormatter: (value: number | null) => value == null ? '' : `${value}%`,
-            showMark: false,
-        },
-    ] as const
+    const chartData = data.map((point) => {
+        const hasMeaningfulPrecip = (point.precipInches ?? 0) > 0.02
+        const isRain = point.precipitationType === 'rain'
+        const showRainChance = isRain && hasMeaningfulPrecip
+        const probabilityValue = point.precipProbability ?? 0
+        const adjustedProbability = showRainChance ? probabilityValue : 0
+        const chartProbability = showRainChance && point.precipProbability != null
+            ? point.precipProbability
+            : null
 
-    const series = [
-        {
-            id: 'snowfall',
-            label: 'Snow (in)',
-            type: 'bar' as const,
-            dataKey: 'inches',
-            yAxisId: 'snow',
-            minBarSize: 6,
-            color: chartColors.snow,
-            valueFormatter: (value: number | null) => value == null ? '' : `${value}"`,
-            barLabel: ({ value }: { value: number | null }) => value == null || value === 0 ? null : `${value}`,
-            barLabelPlacement: 'outside' as const,
-        },
-        ...weatherSeries,
-    ]
+        return {
+            ...point,
+            precipProbability: adjustedProbability,
+            precipProbabilityChart: chartProbability,
+        }
+    })
+
+    const weatherSeries = [
+        { id: 'temperature', label: 'Temp (°F)', color: chartColors.temperature },
+        { id: 'wind', label: 'Wind (mph)', color: chartColors.wind },
+        { id: 'cloud', label: 'Cloud cover (%)', color: chartColors.cloud },
+        { id: 'precip-prob', label: 'Rain chance (%)', color: chartColors.precipProbability },
+    ] as const
 
     const legendItems = [
         { id: 'snowfall', label: 'Snow (in)', color: chartColors.snow },
@@ -294,9 +315,6 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                                                         ? warning.startLabel
                                                         : `${warning.startLabel} - ${warning.endLabel}`}
                                                 </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {warning.warning}
-                                                </Typography>
                                             </Box>
                                         </Stack>
                                     ))}
@@ -340,20 +358,20 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                     </Stack>
                 </Stack>
 
-                <Box sx={{ position: 'relative', height: 520 }}>
+                <Box sx={{ position: 'relative', height: 520, minHeight: 520, minWidth: 0, width: '100%' }}>
                     <Box
                         sx={{
                             position: 'absolute',
                             top: 24,
                             bottom: 32,
                             left: 12,
-                            right: 24,
+                            right: 36,
                             pointerEvents: 'none',
                             overflow: 'hidden',
                         }}>
                         {rainBands.map((band, idx) => {
-                            const left = (band.start / data.length) * 100
-                            const width = ((band.end - band.start + 1) / data.length) * 100
+                            const left = (band.start / chartData.length) * 100
+                            const width = ((band.end - band.start + 1) / chartData.length) * 100
                             return (
                                 <Box
                                     key={`rain-band-${band.start}-${band.end}-${idx}`}
@@ -372,48 +390,102 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                             )
                         })}
                     </Box>
-                    <ChartContainer
-                        height={520}
-                        dataset={data}
-                        series={series}
-                        xAxis={[{
-                            id: 'time',
-                            dataKey: 'time',
-                            scaleType: 'band',
-                            tickLabelStyle: { fill: '#d7e3ff', fontSize: 12, fontWeight: 600 },
-                        }]}
-                        yAxis={[
-                            {
-                                id: 'snow',
-                                position: 'none',
-                                label: 'Snow (inches)',
-                                labelStyle: { fill: '#cbd5f5', fontSize: 12 },
-                                tickLabelStyle: { fill: '#cbd5f5', fontSize: 12 },
-                            },
-                            {
-                                id: 'weather',
-                                label: 'Temp / Wind / Cloud',
-                                position: 'left',
-                                labelStyle: { fill: '#cbd5f5', fontSize: 12 },
-                                tickLabelStyle: { fill: '#cbd5f5', fontSize: 12 },
-                            },
-                        ]}
-                        margin={{ top: 24, right: 36, bottom: 32, left: 12 }}
-                    >
-                        <ChartsGrid horizontal />
-                        <BarPlot
-                            slotProps={{
-                                barLabel: { style: { fill: '#e5edff', fontSize: 12, fontWeight: 700 } },
-                            }}
-                        />
-                        <LinePlot />
-                        <ChartsXAxis axisId="time" />
-                        <ChartsYAxis axisId="snow" />
-                        <ChartsYAxis axisId="weather" />
-                        <ChartsTooltipContainer trigger="axis" placement="right-start">
-                            <ForecastTooltip points={data} />
-                        </ChartsTooltipContainer>
-                    </ChartContainer>
+                    <ResponsiveContainer width="100%" height={520} minHeight={520} minWidth={320}>
+                        <ComposedChart
+                            data={chartData}
+                            margin={{ top: 24, right: 36, bottom: 32, left: 36 }}
+                            barGap={-16}
+                            barCategoryGap="30%"
+                        >
+                            <CartesianGrid
+                                vertical={false}
+                                stroke="rgba(203, 213, 245, 0.18)"
+                                strokeDasharray="4 6"
+                            />
+                            <XAxis
+                                dataKey="time"
+                                interval={0}
+                                tick={{ fill: '#d7e3ff', fontSize: 12, fontWeight: 600 }}
+                                axisLine={{ stroke: 'rgba(203, 213, 245, 0.35)' }}
+                                tickLine={{ stroke: 'rgba(203, 213, 245, 0.35)' }}
+                            />
+                            <YAxis
+                                yAxisId="snow"
+                                hide
+                                domain={[0, 'auto']}
+                            />
+                            <YAxis
+                                yAxisId="weather"
+                                orientation="left"
+                                width={56}
+                                tickMargin={10}
+                                domain={[0, 100]}
+                                allowDataOverflow
+                                tick={{ fill: '#cbd5f5', fontSize: 12 }}
+                                axisLine={{ stroke: 'rgba(203, 213, 245, 0.35)' }}
+                                tickLine={{ stroke: 'rgba(203, 213, 245, 0.35)' }}
+                                label={{
+                                    value: 'Temp / Wind / Cloud',
+                                    angle: -90,
+                                    position: 'insideLeft',
+                                    fill: '#cbd5f5',
+                                    fontSize: 12,
+                                }}
+                            />
+                            <Tooltip<number, string>
+                                content={(props) => (
+                                    <ForecastTooltip {...props} points={chartData} />
+                                )}
+                                cursor={{ stroke: 'rgba(219, 231, 255, 0.25)' }}
+                                filterNull={false}
+                                shared
+                                wrapperStyle={{ outline: 'none' }}
+                            />
+                            <Bar
+                                yAxisId="snow"
+                                dataKey="inches"
+                                name="Snow (in)"
+                                fill={chartColors.snow}
+                                barSize={22}
+                            >
+                                <LabelList dataKey="inches" content={renderSnowLabel} />
+                            </Bar>
+                            <Bar
+                                yAxisId="weather"
+                                dataKey="precipProbabilityChart"
+                                name="Rain chance (%)"
+                                fill={chartColors.precipProbability}
+                                barSize={10}
+                            />
+                            <Line
+                                yAxisId="weather"
+                                type="linear"
+                                dataKey="temperatureF"
+                                name="Temp (°F)"
+                                stroke={chartColors.temperature}
+                                strokeWidth={2}
+                                dot={false}
+                            />
+                            <Line
+                                yAxisId="weather"
+                                type="linear"
+                                dataKey="windMph"
+                                name="Wind (mph)"
+                                stroke={chartColors.wind}
+                                strokeWidth={2}
+                                dot={false}
+                            />
+                            <Line
+                                yAxisId="weather"
+                                type="linear"
+                                dataKey="cloudCover"
+                                name="Cloud cover (%)"
+                                stroke={chartColors.cloud}
+                                strokeWidth={2}
+                                dot={false}
+                            />
+                        </ComposedChart>
+                    </ResponsiveContainer>
                 </Box>
             </Paper>
         </Stack>

@@ -1,10 +1,11 @@
 import { alpha } from '@mui/material/styles'
 
 export const chartColors = {
-    snow: '#7fb7ff',
+    snow: '#cadeed',
     temperature: '#ffd37a',
     wind: '#6ee7b7',
     cloud: '#d0a6ff',
+    precipProbability: '#7fb7ff',
     alertRain: '#fca5a5',
     alertLight: '#fde68a',
     alertSnow: '#bfdbfe',
@@ -16,5 +17,5 @@ export const chartColors = {
     },
 }
 
-export const surfaceGradient = `linear-gradient(160deg, ${alpha(chartColors.snow, 0.25)}, ${alpha(chartColors.snow, 0.1)})`
-export const tooltipGradient = `linear-gradient(140deg, ${alpha(chartColors.snow, 0.22)}, rgba(8, 14, 28, 0.96))`
+export const surfaceGradient = `linear-gradient(160deg, ${alpha('#7fb7ff', 0.25)}, ${alpha('#7fb7ff', 0.1)})`
+export const tooltipGradient = `linear-gradient(140deg, ${alpha('#7fb7ff', 0.22)}, rgba(8, 14, 28, 0.96))`
