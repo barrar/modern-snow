@@ -1,6 +1,7 @@
 'use client'
 
 import { Box, Chip, Divider, Grid, Paper, Stack, Typography } from '@mui/material'
+import { Cloud, CloudRain, Droplets, Snowflake, Thermometer, Wind } from 'lucide-react'
 import type { LabelProps, TooltipContentProps } from 'recharts'
 import {
     Bar,
@@ -27,6 +28,8 @@ const chartPanelSx = {
     background: surfaceGradient,
     boxShadow: '0 24px 60px rgba(6, 12, 28, 0.45)',
 }
+
+const rainWarningThreshold = 15
 
 const warningTone = (point: ForecastPoint) => {
     if (point.alert === 'rain') return { label: 'Rain risk', color: 'error' as const }
@@ -72,18 +75,41 @@ const ForecastTooltip = ({ active, payload, activeIndex, points }: ForecastToolt
             ? chartColors.snow
             : chartColors.alertDefault
 
-    const MetricRow = ({ label, value, color }: { label: string; value: React.ReactNode; color: string }) => (
+    const MetricRow = ({
+        label,
+        value,
+        color,
+        icon,
+    }: {
+        label: string
+        value: React.ReactNode
+        color: string
+        icon?: React.ReactNode
+    }) => (
         <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Stack direction="row" spacing={1} alignItems="center">
-                <Box
-                    sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: color,
-                        boxShadow: '0 0 8px rgba(15, 23, 42, 0.45)',
-                    }}
-                />
+                {icon ? (
+                    <Box
+                        sx={{
+                            width: 16,
+                            height: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}>
+                        {icon}
+                    </Box>
+                ) : (
+                    <Box
+                        sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            backgroundColor: color,
+                            boxShadow: '0 0 8px rgba(15, 23, 42, 0.45)',
+                        }}
+                    />
+                )}
                 <Typography variant="body2" color="text.secondary">{label}</Typography>
             </Stack>
             <Typography variant="subtitle1" fontWeight={700}>{value}</Typography>
@@ -120,17 +146,20 @@ const ForecastTooltip = ({ active, payload, activeIndex, points }: ForecastToolt
                         label="Snow"
                         value={`${point.inches ?? 0}"`}
                         color={chartColors.snow}
+                        icon={<Snowflake size={16} color={chartColors.snow} strokeWidth={2.25} />}
                     />
                     <MetricRow
                         label="Precip"
                         value={`${point.precipInches ?? 0}"`}
                         color={precipDotColor}
+                        icon={<CloudRain size={16} color={precipDotColor} strokeWidth={2.25} />}
                     />
                     {point.precipProbability != null && (
                         <MetricRow
                             label="Rain chance"
                             value={`${point.precipProbability}%`}
                             color={chartColors.precipProbability}
+                            icon={<Droplets size={16} color={chartColors.precipProbability} strokeWidth={2.25} />}
                         />
                     )}
                     {point.temperatureF != null && (
@@ -138,6 +167,7 @@ const ForecastTooltip = ({ active, payload, activeIndex, points }: ForecastToolt
                             label="Temperature"
                             value={`${Math.round(point.temperatureF)}°F`}
                             color={chartColors.temperature}
+                            icon={<Thermometer size={16} color={chartColors.temperature} strokeWidth={2.25} />}
                         />
                     )}
                     {point.windMph != null && (
@@ -145,6 +175,7 @@ const ForecastTooltip = ({ active, payload, activeIndex, points }: ForecastToolt
                             label="Wind"
                             value={`${point.windMph} mph`}
                             color={chartColors.wind}
+                            icon={<Wind size={16} color={chartColors.wind} strokeWidth={2.25} />}
                         />
                     )}
                     {point.cloudCover != null && (
@@ -152,6 +183,7 @@ const ForecastTooltip = ({ active, payload, activeIndex, points }: ForecastToolt
                             label="Cloud cover"
                             value={`${point.cloudCover}%`}
                             color={chartColors.cloud}
+                            icon={<Cloud size={16} color={chartColors.cloud} strokeWidth={2.25} />}
                         />
                     )}
                 </Stack>
@@ -172,6 +204,7 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
 
     data.forEach((point, idx) => {
         if (!point.alert) return
+        if (point.alert === 'rain' && (point.precipProbability ?? 0) <= rainWarningThreshold) return
         const existing = warningMap.get(point.alert)
         if (!existing) {
             warningMap.set(point.alert, {
@@ -324,9 +357,6 @@ export default function CustomChart({ data }: { data: ForecastPoint[] }) {
                                     No precipitation concerns.
                                 </Typography>
                             )}
-                            <Typography variant="caption" color="text.secondary">
-                                Any rain is flagged. Tiny precip amounts are allowed for bluebird calls but still warned.
-                            </Typography>
                         </Stack>
                     </Paper>
                 </Grid>
