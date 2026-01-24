@@ -33,7 +33,8 @@ export default function LocationMenu({ locations, value }: LocationMenuProps) {
             size="small"
             sx={{
                 minWidth: { xs: '100%', sm: 280 },
-                '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' },
+                '& .MuiOutlinedInput-root': { bgcolor: 'background.default' },
+                '& .MuiSelect-select': { bgcolor: 'background.default' },
             }}
         >
             <InputLabel id="location-select-label">Location</InputLabel>
@@ -42,6 +43,11 @@ export default function LocationMenu({ locations, value }: LocationMenuProps) {
                 label="Location"
                 value={value}
                 onChange={handleChange}
+                MenuProps={{
+                    PaperProps: {
+                        sx: { bgcolor: 'background.default' },
+                    },
+                }}
             >
                 {locations.map((location) => (
                     <MenuItem key={location.id} value={location.id}>
