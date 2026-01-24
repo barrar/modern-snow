@@ -49,8 +49,6 @@ export type ForecastLocationId =
     | 'winter-park'
     | 'arapahoe-basin'
     | 'telluride'
-    | 'caribou-kcar'
-    | 'bar-harbor'
 
 export type ForecastLocation = {
     id: ForecastLocationId
