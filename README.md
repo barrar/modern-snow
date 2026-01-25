@@ -1,21 +1,25 @@
-Modern Snow is a Next.js App Router app that visualizes NOAA forecast data as an interactive snowfall/precipitation outlook for Mt. Bachelor (Bend, Oregon).
+# Modern Snow
 
-https://modern-snow.vercel.app
+Modern Snow is a Next.js App Router app that turns NOAA Weather.gov gridpoint data into a visual snowfall outlook for major ski resorts across the Western US.
+
+Live demo: https://modern-snow.vercel.app
 
 ## What It Does
 
-- Pulls the latest forecast grid data from the NOAA Weather.gov API.
-- Builds a time-series of forecast “windows” (snowfall, total precip, and precip probability).
-- Highlights “bluebird” windows (fresh snow with little-to-no precip) and flags precipitation concerns (rain risk, light precip, or snow ongoing).
-- Renders an interactive bar chart with tooltips that work across the full column hover area.
+- Pulls the latest NOAA gridpoint forecast for the selected resort.
+- Normalizes each forecast window (snowfall, total precip, precip probability, temperature, wind, and cloud cover).
+- Highlights bluebird windows and flags rain risk, light precip, or ongoing snow.
+- Renders an interactive chart with snowfall bars, weather overlays, and rich tooltips.
+- Lets users pick a state, resort, and time zone (defaults to the browser time zone when available).
 
 ## Tech Stack
 
 - Next.js (App Router) + React
 - TypeScript
 - MUI (Material UI) for layout/styling
-- MUI X Charts for the forecast bar chart + tooltip
+- Recharts for the forecast chart
 - `dayjs` for time formatting
+- `lucide-react` for alert icons
 
 ## Project Structure
 
@@ -23,7 +27,18 @@ https://modern-snow.vercel.app
 - `src/app/page.tsx` — landing page shell + suspense boundary for the forecast
 - `src/components/SnowForecast.tsx` — server component that loads NOAA data and streams the client chart
 - `src/components/CustomChart.tsx` — client chart UI (warnings, bands, tooltip, chart config)
-- `src/data/getWeatherData.tsx` — server-side fetch + normalization of NOAA forecast data (explicit cache revalidation and required `user-agent`)
+- `src/components/LocationMenu.tsx` — state, resort, and time zone selectors
+- `src/data/getWeatherData.tsx` — server-side fetch + normalization of NOAA forecast data
+- `src/data/forecastLocations.ts` — resort gridpoints grouped by state
+- `src/data/timeZones.ts` — time zone options + resolver
+
+## Data Source & Caching
+
+The forecast is fetched from the NOAA Weather.gov gridpoint endpoint configured in `src/data/getWeatherData.tsx`.
+
+- Locations are defined in `src/data/forecastLocations.ts` as `{ office, x, y }` gridpoints.
+- Weather.gov requests require a descriptive `User-Agent`; this project sets one in the request headers.
+- Optional Redis caching is supported via `REDIS_ROSE_OCEAN_REDIS_URL` (TTL is 4 hours). Next.js fetch uses `cache: "no-store"` so Redis is the cache layer.
 
 ## Development
 
@@ -41,46 +56,8 @@ npm run build
 npm run start
 ```
 
-## Data Source & Location
+## Configuring Locations and Time Zones
 
-The forecast is fetched from the NOAA Weather.gov gridpoint endpoint configured in `src/data/getWeatherData.tsx`.
-
-- To change the forecast area, update the gridpoint in the `fetch()` URL.
-- Weather.gov requests require a descriptive `User-Agent`; this project sets one in the request headers.
-- Fetch caching is explicit via `next: { revalidate: 10 }` so the UI stays fresh without hammering the API.
-
-## Getting Started
-
-Run the development server:
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the app shell in `src/app/page.tsx` (and global layout/styles in `src/app/layout.tsx` + `src/app/globals.css`).
-
-## Commands
-
-```bash
-npm run dev   # start local server
-npm run lint  # eslint checks
-npm run build # production build
-npm run start # serve production build
-```
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- Add or update resorts in `src/data/forecastLocations.ts`.
+- Adjust the selectable time zones in `src/data/timeZones.ts`.
+- Query params are supported: `?state=oregon&location=bachelor&timezone=America/Los_Angeles`.
