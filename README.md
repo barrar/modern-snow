@@ -62,3 +62,7 @@ npm run start
 - Add or update resorts in `src/data/forecastLocations.ts`.
 - Adjust the selectable time zones in `src/data/timeZones.ts`.
 - Query params are supported: `?state=oregon&location=bachelor&timezone=America/Los_Angeles`.
+
+## License
+
+(c) 2026 Jeremiah Barrar. All rights reserved. No reproduction or distribution allowed.
