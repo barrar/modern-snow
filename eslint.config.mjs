@@ -1,13 +1,14 @@
-process.env.BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA = "true";
-process.env.BROWSERSLIST_IGNORE_OLD_DATA = "true";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+import prettier from "eslint-config-prettier/flat";
+import reactHooks from "eslint-plugin-react-hooks";
+import { defineConfig } from "eslint/config";
 
-import nextConfig from "eslint-config-next/core-web-vitals";
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  prettier,
+  reactHooks.configs.flat.recommended,
+]);
 
-const config = [
-  {
-    ignores: ["**/node_modules/**"],
-  },
-  ...nextConfig,
-];
-
-export default config;
+export default eslintConfig;
