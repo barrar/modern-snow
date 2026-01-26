@@ -1,6 +1,6 @@
-import { Suspense } from "react";
-import { Box, Container, Paper, Stack, Typography } from "@mui/material";
 import LocationMenu from "@/components/LocationMenu";
+import { Box, Button, Container, Paper, Stack, Typography } from "@mui/material";
+import { Suspense } from "react";
 import SnowForecast from "../components/SnowForecast";
 import { surfaceGradient } from "../data/chartStyles";
 import {
@@ -51,6 +51,7 @@ export default async function Page({ searchParams }: PageProps) {
     timeZoneOptions,
     timeZoneValue,
   };
+  const currentYear = new Date().getFullYear();
 
   return (
     <Box sx={{ minHeight: "100vh", py: { xs: 4, md: 6 } }}>
@@ -94,6 +95,35 @@ export default async function Page({ searchParams }: PageProps) {
           >
             <SnowForecast locationId={location.id} timeZoneId={timeZoneValue} />
           </Suspense>
+          <Box
+            component="footer"
+            sx={{
+              mt: { xs: 4, md: 5 },
+              pt: 2.5,
+              borderTop: "1px solid rgba(226, 232, 255, 0.16)",
+            }}
+          >
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={1}
+              alignItems={{ xs: "flex-start", md: "center" }}
+              justifyContent="space-between"
+            >
+              <Typography variant="body2" color="text.secondary">
+                © {currentYear} Jeremiah Barrar
+              </Typography>
+              <Button
+                href="https://github.com/barrar/powder-meter"
+                target="_blank"
+                rel="noreferrer"
+                color="primary"
+                variant="contained"
+                sx={{ textTransform: "none" }}
+              >
+                Source Code on GitHub
+              </Button>
+            </Stack>
+          </Box>
         </Stack>
       </Container>
     </Box>
