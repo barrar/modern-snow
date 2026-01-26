@@ -5,7 +5,7 @@ import ThemeRegistry from "../components/ThemeRegistry";
 const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
 
 export const metadata: Metadata = {
-  title: "Modern Snow",
+  title: "Powder Meter",
   description: "Find the best snow days",
 };
 

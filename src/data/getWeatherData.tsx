@@ -175,7 +175,7 @@ export async function getWeatherData(
       const res = await fetch(
         `https://api.weather.gov/gridpoints/${location.gridpoints.office}/${location.gridpoints.x},${location.gridpoints.y}`,
         {
-          headers: { "user-agent": "(modernsnow.com, contact@modernsnow.com)" },
+          headers: { "user-agent": "(powdermeter.com, contact@powdermeter.com)" },
           cache: "no-store",
         },
       );

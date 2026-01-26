@@ -725,20 +725,6 @@ export default function CustomChart({ data, timeZone }: CustomChartProps) {
           spacing={2}
           sx={{ mt: 2 }}
         >
-          <Stack sx={{ mb: 1 }}>
-            <Stack
-              direction="row"
-              spacing={1.5}
-              alignItems="center"
-              justifyContent="space-between"
-            >
-              <Typography variant="h5">Snowfall outlook</Typography>
-            </Stack>
-            <Typography variant="body2" color="text.secondary">
-              Bars show expected snowfall, lines show temperature, wind, and
-              cloud cover.
-            </Typography>
-          </Stack>
           <Stack
             direction="row"
             spacing={2}

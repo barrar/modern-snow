@@ -73,7 +73,7 @@ export default async function Page({ searchParams }: PageProps) {
               >
                 <Stack spacing={1}>
                   <Typography variant="h3" component="h1">
-                    Modern Snow
+                    Powder Meter
                   </Typography>
                   <Typography
                     variant="body1"

@@ -1,8 +1,8 @@
-# Modern Snow
+# Powder Meter
 
-Modern Snow is a Next.js App Router app that turns NOAA Weather.gov gridpoint data into a visual snowfall outlook for major ski resorts across the Western US.
+Powder Meter is a Next.js App Router app that turns NOAA Weather.gov gridpoint data into a visual snowfall outlook for major ski resorts across the Western US.
 
-Live demo: https://modern-snow.vercel.app
+Live demo: https://powdermeter.com
 
 ## What It Does
 
