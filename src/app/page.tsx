@@ -1,57 +1,58 @@
-import LocationMenu from "@/components/LocationMenu";
-import { Box, Button, Container, Paper, Stack, Typography } from "@mui/material";
 import { Suspense } from "react";
-import SnowForecast from "../components/SnowForecast";
-import { surfaceGradient } from "../data/chartStyles";
+import { Box, Button, Container, Paper, Stack, Typography } from "@mui/material";
+import LocationMenu from "@/components/LocationMenu";
+import SnowForecast from "@/components/SnowForecast";
 import {
   forecastLocations,
   forecastStates,
   getForecastLocation,
   getForecastLocationsForState,
-  getForecastState,
-} from "../data/forecastLocations";
-import { resolveTimeZoneId, timeZoneOptions } from "../data/timeZones";
+} from "@/data/forecastLocations";
+import { surfaceGradient } from "@/data/chartStyles";
+import { resolveTimeZoneId, timeZoneOptions } from "@/data/timeZones";
 
-type PageProps = {
-  searchParams?:
-  | {
-    location?: string | string[];
-    state?: string | string[];
-    timezone?: string | string[];
-  }
-  | Promise<{
-    location?: string | string[];
-    state?: string | string[];
-    timezone?: string | string[];
-  }>;
+type SearchParams = {
+  location?: string | string[];
+  timezone?: string | string[];
 };
 
-export default async function Page({ searchParams }: PageProps) {
-  const resolvedSearchParams = await searchParams;
-  const locationParam = Array.isArray(resolvedSearchParams?.location)
-    ? resolvedSearchParams?.location[0]
-    : resolvedSearchParams?.location;
-  const stateParam = Array.isArray(resolvedSearchParams?.state)
-    ? resolvedSearchParams?.state[0]
-    : resolvedSearchParams?.state;
-  const timeZoneValue = resolveTimeZoneId(resolvedSearchParams?.timezone);
+type PageProps = {
+  searchParams?: SearchParams | Promise<SearchParams>;
+};
+
+const resolveParam = (value?: string | string[]) =>
+  Array.isArray(value) ? value[0] : value;
+
+const resolveForecastSelection = (searchParams?: SearchParams) => {
+  const locationParam = resolveParam(searchParams?.location);
+  const timeZoneValue = resolveTimeZoneId(searchParams?.timezone);
   const locationFromParam = getForecastLocation(locationParam);
-  const resolvedState = getForecastState(stateParam ?? locationFromParam.state);
+  const resolvedState = locationFromParam.state;
   const stateLocations = getForecastLocationsForState(resolvedState);
   const location =
     stateLocations.find((item) => item.id === locationFromParam.id) ??
     stateLocations[0] ??
     locationFromParam;
 
-  const locationMenu = {
-    locations: forecastLocations,
-    states: forecastStates,
-    stateValue: resolvedState,
-    value: location.id,
-    timeZoneOptions,
+  return {
+    locationId: location.id,
     timeZoneValue,
+    menu: {
+      locations: forecastLocations,
+      states: forecastStates,
+      stateValue: resolvedState,
+      value: location.id,
+      timeZoneOptions,
+      timeZoneValue,
+    },
   };
-  const currentYear = new Date().getFullYear();
+};
+
+export default async function Page({ searchParams }: PageProps) {
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const { locationId, timeZoneValue, menu } = resolveForecastSelection(
+    resolvedSearchParams,
+  );
 
   return (
     <Box sx={{ minHeight: "100vh", py: { xs: 4, md: 6 } }}>
@@ -84,17 +85,18 @@ export default async function Page({ searchParams }: PageProps) {
                   </Typography>
                 </Stack>
               </Stack>
-              <LocationMenu {...locationMenu} />
+              <LocationMenu {...menu} />
             </Stack>
           </Paper>
 
           <Suspense
             fallback={
-              <Typography variant="body2">Loading NOAA forecast…</Typography>
+              <Typography variant="body2">Loading forecast...</Typography>
             }
           >
-            <SnowForecast locationId={location.id} timeZoneId={timeZoneValue} />
+            <SnowForecast locationId={locationId} timeZoneId={timeZoneValue} />
           </Suspense>
+
           <Box
             component="footer"
             sx={{
@@ -110,7 +112,7 @@ export default async function Page({ searchParams }: PageProps) {
               justifyContent="space-between"
             >
               <Typography variant="body2" color="text.secondary">
-                © {currentYear} Jeremiah Barrar
+                {`\u00a9 ${new Date().getFullYear()} Jeremiah Barrar`}
               </Typography>
               <Button
                 href="https://github.com/barrar/powder-meter"

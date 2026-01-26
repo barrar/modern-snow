@@ -9,7 +9,7 @@ import {
 
 dayjs.extend(utc);
 
-const CACHE_TTL_SECONDS = 4 * 60 * 60;
+const CACHE_TTL_SECONDS = 4 * 60 * 60; // 4 hours
 
 type RedisClient = ReturnType<typeof createClient>;
 

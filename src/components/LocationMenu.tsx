@@ -48,12 +48,6 @@ export default function LocationMenu({
     const nextLocation = event.target.value;
     const params = new URLSearchParams(searchParams?.toString());
     params.set("location", String(nextLocation));
-    const locationMatch = locations.find(
-      (location) => location.id === nextLocation,
-    );
-    if (locationMatch) {
-      params.set("state", locationMatch.state);
-    }
     const query = params.toString();
     router.push(query ? `/?${query}` : "/");
     router.refresh();
@@ -62,7 +56,6 @@ export default function LocationMenu({
   const handleStateChange = (event: SelectChangeEvent) => {
     const nextState = event.target.value as ForecastState;
     const params = new URLSearchParams(searchParams?.toString());
-    params.set("state", nextState);
     const nextLocation = locations.find(
       (location) => location.state === nextState,
     );
@@ -117,8 +110,6 @@ export default function LocationMenu({
           width: "100%",
           flex: 1,
           minWidth: 0,
-          "& .MuiOutlinedInput-root": { bgcolor: "background.default" },
-          "& .MuiSelect-select": { bgcolor: "background.default" },
         }}
       >
         <InputLabel id="state-select-label">State</InputLabel>
@@ -146,8 +137,6 @@ export default function LocationMenu({
           width: "100%",
           flex: 1,
           minWidth: 0,
-          "& .MuiOutlinedInput-root": { bgcolor: "background.default" },
-          "& .MuiSelect-select": { bgcolor: "background.default" },
         }}
       >
         <InputLabel id="location-select-label">Location</InputLabel>
@@ -175,8 +164,6 @@ export default function LocationMenu({
           width: "100%",
           flex: 1,
           minWidth: 0,
-          "& .MuiOutlinedInput-root": { bgcolor: "background.default" },
-          "& .MuiSelect-select": { bgcolor: "background.default" },
         }}
       >
         <InputLabel id="timezone-select-label">Time zone</InputLabel>
