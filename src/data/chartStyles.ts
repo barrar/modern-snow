@@ -7,8 +7,6 @@ export const chartColors = {
   cloud: "#d0a6ff",
   precipProbability: "#7fb7ff",
   alertRain: "#fca5a5",
-  alertLight: "#fde68a",
-  alertSnow: "#bfdbfe",
   alertDefault: "#c7d2fe",
   rainBand: {
     fill: "linear-gradient(180deg, rgba(248,113,113,0.22) 0%, rgba(248,113,113,0.08) 100%)",

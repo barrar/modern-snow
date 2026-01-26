@@ -86,11 +86,12 @@ export type ForecastPoint = {
   precipProbability: number | null;
   temperatureF: number | null;
   windMph: number | null;
+  windGustMph: number | null;
   cloudCover: number | null;
   precipitationType: "snow" | "rain" | "none";
   hasFreshPowder: boolean;
   isBluebird: boolean;
-  alert: "rain" | "light-precip" | "snow-ongoing" | null;
+  alert: "rain" | null;
 };
 
 const parseNumber = (value: number | string | null | undefined) => {
@@ -195,6 +196,7 @@ export async function getWeatherData(
   const temperature = (data.properties.temperature?.values ??
     []) as NOAAValue[];
   const windSpeed = (data.properties.windSpeed?.values ?? []) as NOAAValue[];
+  const windGust = (data.properties.windGust?.values ?? []) as NOAAValue[];
   const skyCover = (data.properties.skyCover?.values ?? []) as NOAAValue[];
 
   const baseSeries = snowfall.length
@@ -234,6 +236,12 @@ export async function getWeatherData(
       parseNumber(entry.value),
     ]),
   );
+  const windGustByStart = new Map<string, number | null>(
+    windGust.map((entry) => [
+      validStart(entry.validTime),
+      parseNumber(entry.value),
+    ]),
+  );
   const cloudByStart = new Map<string, number | null>(
     skyCover.map((entry) => [
       validStart(entry.validTime),
@@ -249,6 +257,10 @@ export async function getWeatherData(
     baseTimes,
     baseTimes.map((start) => windByStart.get(start) ?? null),
   );
+  const windGustValues = fillNearest(
+    baseTimes,
+    baseTimes.map((start) => windGustByStart.get(start) ?? null),
+  );
   const cloudValues = fillNearest(
     baseTimes,
     baseTimes.map((start) => cloudByStart.get(start) ?? null),
@@ -262,26 +274,24 @@ export async function getWeatherData(
       const probability = probByStart.get(start) ?? null;
       const temperatureF = cToF(tempValues[idx] ?? null);
       const windMph = kmhToMph(windValues[idx] ?? null);
+      const windGustMph = kmhToMph(windGustValues[idx] ?? null);
       const cloudCoverRaw = cloudValues[idx] ?? null;
       const cloudCover =
         cloudCoverRaw == null ? null : Math.round(cloudCoverRaw);
 
       const hasFreshPowder = snowInches >= 0.5;
-      const hasPrecip = precipInches > 0;
-      const minorPrecip = precipInches > 0 && precipInches <= 0.05;
       const precipType: ForecastPoint["precipitationType"] =
-        hasPrecip && snowInches === 0 ? "rain" : hasPrecip ? "snow" : "none";
+        precipInches > 0 && snowInches === 0
+          ? "rain"
+          : precipInches > 0
+            ? "snow"
+            : "none";
+      const hasRainChance = probability != null && probability > 15;
 
       const alert: ForecastPoint["alert"] =
-        precipType === "rain"
-          ? "rain"
-          : minorPrecip
-            ? "light-precip"
-            : hasPrecip
-              ? "snow-ongoing"
-              : null;
+        precipType === "rain" && hasRainChance ? "rain" : null;
 
-      const isBluebird = hasFreshPowder && (!hasPrecip || minorPrecip);
+      const isBluebird = hasFreshPowder && precipInches === 0;
 
       return {
         time: dayjs.utc(start).toISOString(),
@@ -291,6 +301,7 @@ export async function getWeatherData(
         precipProbability: probability,
         temperatureF,
         windMph,
+        windGustMph,
         cloudCover,
         precipitationType: precipType,
         hasFreshPowder,

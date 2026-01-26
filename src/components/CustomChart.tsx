@@ -8,7 +8,7 @@ import {
   Paper,
   Stack,
   Typography,
-  useMediaQuery,
+  useMediaQuery
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
@@ -52,26 +52,45 @@ const chartPanelSx = {
   boxShadow: "0 24px 60px rgba(6, 12, 28, 0.45)",
 };
 
-const rainWarningThreshold = 15;
+const rainWarningThreshold = 10;
 const rainPrecipThreshold = 0.02;
+const windWarningThreshold = 20;
 
 type ChartPoint = ForecastPoint & {
+  peakWindMph: number | null;
   timeLabel: string;
+  dateLabel: string;
   rangeLabel: string;
   dayLabel: string;
+  endTimeLabel: string;
+  endTimeMs: number;
   precipProbabilityChart: number | null;
   showRainRisk: boolean;
+  showWindRisk: boolean;
 };
 
 const warningTone = (point: ChartPoint) => {
   if (point.showRainRisk)
     return { label: "Rain risk", color: "error" as const };
-  if (point.alert === "light-precip")
-    return { label: "Light precip", color: "warning" as const };
-  if (point.alert === "snow-ongoing")
-    return { label: "Snow ongoing", color: "secondary" as const };
   if (point.isBluebird) return { label: "Bluebird", color: "info" as const };
   return null;
+};
+
+const formatMph = (value: number | null) => {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const rounded = Math.round(value * 10) / 10;
+  return `${rounded} mph`;
+};
+
+const formatPercent = (value: number | null) => {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return `${Math.round(value)}%`;
+};
+
+const formatInches = (value: number | null) => {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const rounded = Math.round(value * 100) / 100;
+  return `${rounded}"`;
 };
 
 const renderSnowLabel = ({ x, y, width, value }: LabelProps) => {
@@ -99,6 +118,49 @@ const renderSnowLabel = ({ x, y, width, value }: LabelProps) => {
   );
 };
 
+type MetricRowProps = {
+  label: string;
+  value: React.ReactNode;
+  color: string;
+  icon?: React.ReactNode;
+};
+
+const MetricRow = ({ label, value, color, icon }: MetricRowProps) => (
+  <Stack direction="row" justifyContent="space-between" alignItems="center">
+    <Stack direction="row" spacing={1} alignItems="center">
+      {icon ? (
+        <Box
+          sx={{
+            width: 16,
+            height: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {icon}
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            backgroundColor: color,
+            boxShadow: "0 0 8px rgba(15, 23, 42, 0.45)",
+          }}
+        />
+      )}
+      <Typography variant="subtitle1" color={color} fontWeight={700}>
+        {label}
+      </Typography>
+    </Stack>
+    <Typography variant="subtitle1" color={color} fontWeight={700}>
+      {value}
+    </Typography>
+  </Stack>
+);
+
 type ForecastTooltipProps = TooltipContentProps<number, string> & {
   points: ChartPoint[];
 };
@@ -116,58 +178,6 @@ const ForecastTooltip = ({
   const point = payloadPoint ?? fallbackPoint;
   if (!point) return null;
   const tone = warningTone(point);
-  const precipDotColor =
-    point.precipitationType === "rain"
-      ? chartColors.alertRain
-      : point.precipitationType === "snow"
-        ? chartColors.snow
-        : chartColors.alertDefault;
-  const MetricRow = ({
-    label,
-    value,
-    color,
-    icon,
-  }: {
-    label: string;
-    value: React.ReactNode;
-    color: string;
-    icon?: React.ReactNode;
-  }) => (
-    <Stack direction="row" justifyContent="space-between" alignItems="center">
-      <Stack direction="row" spacing={1} alignItems="center">
-        {icon ? (
-          <Box
-            sx={{
-              width: 16,
-              height: 16,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {icon}
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              backgroundColor: color,
-              boxShadow: "0 0 8px rgba(15, 23, 42, 0.45)",
-            }}
-          />
-        )}
-        <Typography variant="body2" color="text.secondary">
-          {label}
-        </Typography>
-      </Stack>
-      <Typography variant="subtitle1" fontWeight={700}>
-        {value}
-      </Typography>
-    </Stack>
-  );
-
   return (
     <Paper
       elevation={0}
@@ -177,6 +187,9 @@ const ForecastTooltip = ({
         backdropFilter: "blur(14px)",
         background: tooltipGradient,
         boxShadow: "0 22px 60px rgba(4, 6, 18, 0.55)",
+        "& .MuiTypography-root": {
+          fontWeight: 700,
+        },
       }}
     >
       <Stack spacing={1.25}>
@@ -216,7 +229,7 @@ const ForecastTooltip = ({
             color={chartColors.snow}
             icon={
               <Snowflake
-                size={16}
+                size={18}
                 color={chartColors.snow}
                 strokeWidth={2.25}
               />
@@ -225,9 +238,9 @@ const ForecastTooltip = ({
           <MetricRow
             label="Precipitation"
             value={`${point.precipInches ?? 0}"`}
-            color={precipDotColor}
+            color={chartColors.precipProbability}
             icon={
-              <CloudRain size={16} color={precipDotColor} strokeWidth={2.25} />
+              <CloudRain size={18} color={chartColors.precipProbability} strokeWidth={2.25} />
             }
           />
           <MetricRow
@@ -236,7 +249,7 @@ const ForecastTooltip = ({
             color={chartColors.precipProbability}
             icon={
               <Droplets
-                size={16}
+                size={18}
                 color={chartColors.precipProbability}
                 strokeWidth={2.25}
               />
@@ -249,7 +262,7 @@ const ForecastTooltip = ({
               color={chartColors.temperature}
               icon={
                 <Thermometer
-                  size={16}
+                  size={18}
                   color={chartColors.temperature}
                   strokeWidth={2.25}
                 />
@@ -262,7 +275,7 @@ const ForecastTooltip = ({
               value={`${point.windMph} mph`}
               color={chartColors.wind}
               icon={
-                <Wind size={16} color={chartColors.wind} strokeWidth={2.25} />
+                <Wind size={18} color={chartColors.wind} strokeWidth={2.25} />
               }
             />
           )}
@@ -272,7 +285,7 @@ const ForecastTooltip = ({
               value={`${point.cloudCover}%`}
               color={chartColors.cloud}
               icon={
-                <Cloud size={16} color={chartColors.cloud} strokeWidth={2.25} />
+                <Cloud size={18} color={chartColors.cloud} strokeWidth={2.25} />
               }
             />
           )}
@@ -316,13 +329,21 @@ export default function CustomChart({ data, timeZone }: CustomChartProps) {
         ? currentDate.getTime() +
         (currentDate.getTime() - new Date(data[idx - 1].time).getTime())
         : null;
-    const hourLabel = hourFormatter
+    const timeOnlyLabel = hourFormatter
       .format(currentDate)
       .replace(/\s/g, "")
       .toLowerCase();
-    const timeLabel = `${dateFormatter.format(currentDate)}, ${hourLabel}`;
-    const rangeLabel = nextTimeMs
-      ? `${timeLabel} - ${hourFormatter.format(new Date(nextTimeMs)).replace(/\s/g, "").toLowerCase()}`
+    const dateLabel = dateFormatter.format(currentDate);
+    const timeLabel = `${dateLabel}, ${timeOnlyLabel}`;
+    const nextDate = nextTimeMs ? new Date(nextTimeMs) : null;
+    const endTimeLabel = nextDate
+      ? `${dateFormatter.format(nextDate)}, ${hourFormatter
+        .format(nextDate)
+        .replace(/\s/g, "")
+        .toLowerCase()}`
+      : timeLabel;
+    const rangeLabel = nextDate
+      ? `${timeLabel} - ${hourFormatter.format(nextDate).replace(/\s/g, "").toLowerCase()}`
       : timeLabel;
     const dayLabel = dayFormatter.format(currentDate);
 
@@ -330,65 +351,172 @@ export default function CustomChart({ data, timeZone }: CustomChartProps) {
     const isRain = point.precipitationType === "rain";
     const probabilityValue = point.precipProbability ?? null;
     const hasRainProbability =
-      probabilityValue != null && probabilityValue > rainWarningThreshold;
+      probabilityValue == null
+        ? rainWarningThreshold <= 0
+        : probabilityValue >= rainWarningThreshold;
     const showRainRisk = isRain && hasMeaningfulPrecip && hasRainProbability;
     const chartProbability = showRainRisk ? probabilityValue : null;
+    const peakWindMph = point.windGustMph ?? point.windMph;
+    const showWindRisk =
+      peakWindMph != null && peakWindMph > windWarningThreshold;
 
     return {
       ...point,
+      peakWindMph,
       timeLabel,
+      dateLabel,
       rangeLabel,
       dayLabel,
+      endTimeLabel,
+      endTimeMs: nextTimeMs ?? currentDate.getTime(),
       precipProbability: probabilityValue,
       precipProbabilityChart: chartProbability,
       showRainRisk,
+      showWindRisk,
     };
   });
 
   const bluebirdWindows = chartData.filter((point) => point.isBluebird);
-  const warningMap = new Map<
-    NonNullable<ForecastPoint["alert"]>,
-    {
-      alert: NonNullable<ForecastPoint["alert"]>;
-      startIndex: number;
-      endIndex: number;
-      startLabel: string;
-      endLabel: string;
-    }
-  >();
+  type WarningType = "rain" | "wind";
+  type WarningRange = {
+    alert: WarningType;
+    startIndex: number;
+    endIndex: number;
+    startLabel: string;
+    endLabel: string;
+    startDateLabel: string;
+    startTimeMs: number;
+    endTimeMs: number;
+  };
+  const maxWarningRangeMs = 24 * 60 * 60 * 1000;
 
-  chartData.forEach((point, idx) => {
-    const alert = point.showRainRisk ? "rain" : point.alert;
-    if (!alert) return;
-    const existing = warningMap.get(alert);
-    if (!existing) {
-      warningMap.set(alert, {
-        alert,
-        startIndex: idx,
-        endIndex: idx,
-        startLabel: point.timeLabel,
-        endLabel: point.timeLabel,
-      });
-      return;
-    }
-    if (idx < existing.startIndex) {
-      existing.startIndex = idx;
-      existing.startLabel = point.timeLabel;
-    }
-    if (idx > existing.endIndex) {
-      existing.endIndex = idx;
-      existing.endLabel = point.timeLabel;
-    }
-  });
+  const isRainWarningPoint = (point: ChartPoint) =>
+    point.showRainRisk || point.alert === "rain";
+  const isWindWarningPoint = (point: ChartPoint) => point.showWindRisk;
 
-  const consolidatedWarnings = Array.from(warningMap.values()).sort(
+  const buildWarningSegments = (
+    alert: WarningType,
+    shouldInclude: (point: ChartPoint) => boolean,
+  ) => {
+    const segments: WarningRange[] = [];
+    let current: WarningRange | null = null;
+
+    chartData.forEach((point, idx) => {
+      if (!shouldInclude(point)) {
+        current = null;
+        return;
+      }
+      const pointTimeMs = new Date(point.time).getTime();
+      if (!current) {
+        current = {
+          alert,
+          startIndex: idx,
+          endIndex: idx,
+          startLabel: point.timeLabel,
+          endLabel: point.endTimeLabel,
+          startDateLabel: point.dateLabel,
+          startTimeMs: pointTimeMs,
+          endTimeMs: point.endTimeMs,
+        };
+        segments.push(current);
+        return;
+      }
+      const exceedsWindow =
+        point.endTimeMs - current.startTimeMs > maxWarningRangeMs;
+      if (exceedsWindow) {
+        current = {
+          alert,
+          startIndex: idx,
+          endIndex: idx,
+          startLabel: point.timeLabel,
+          endLabel: point.endTimeLabel,
+          startDateLabel: point.dateLabel,
+          startTimeMs: pointTimeMs,
+          endTimeMs: point.endTimeMs,
+        };
+        segments.push(current);
+        return;
+      }
+      current.endIndex = idx;
+      current.endLabel = point.endTimeLabel;
+      current.endTimeMs = point.endTimeMs;
+    });
+
+    return segments;
+  };
+
+  const mergeWarningSegments = (segments: WarningRange[]) => {
+    const merged: WarningRange[] = [];
+    segments.forEach((segment) => {
+      const current = merged[merged.length - 1];
+      if (!current) {
+        merged.push({ ...segment });
+        return;
+      }
+      const withinWindow =
+        segment.endTimeMs - current.startTimeMs <= maxWarningRangeMs;
+      if (withinWindow) {
+        current.endIndex = segment.endIndex;
+        current.endLabel = segment.endLabel;
+        current.endTimeMs = segment.endTimeMs;
+        return;
+      }
+      merged.push({ ...segment });
+    });
+    return merged;
+  };
+
+  const rainSegments = mergeWarningSegments(
+    buildWarningSegments("rain", isRainWarningPoint),
+  );
+  const windSegments = mergeWarningSegments(
+    buildWarningSegments("wind", isWindWarningPoint),
+  );
+  const consolidatedWarnings = [...rainSegments, ...windSegments].sort(
     (a, b) => a.startIndex - b.startIndex,
   );
 
-  const alertDotColor = (alert: ForecastPoint["alert"]) => {
+  const getRainSummary = (warning: WarningRange) => {
+    if (warning.alert !== "rain") return null;
+    const warningPoints = chartData
+      .slice(warning.startIndex, warning.endIndex + 1)
+      .filter(isRainWarningPoint);
+    if (!warningPoints.length) return null;
+    const chanceValues = warningPoints
+      .map((point) => point.precipProbability)
+      .filter((value): value is number => value != null);
+    const averageChance = chanceValues.length
+      ? chanceValues.reduce((sum, value) => sum + value, 0) / chanceValues.length
+      : null;
+    const totalPrecip = warningPoints.reduce(
+      (total, point) => total + (point.precipInches ?? 0),
+      0,
+    );
+    return { averageChance, totalPrecip };
+  };
+
+  const getWindSummary = (warning: WarningRange) => {
+    if (warning.alert !== "wind") return null;
+    const warningPoints = chartData
+      .slice(warning.startIndex, warning.endIndex + 1)
+      .filter(isWindWarningPoint);
+    if (!warningPoints.length) return null;
+    const windValues = warningPoints
+      .map((point) => point.windMph)
+      .filter((value): value is number => value != null);
+    const averageWind = windValues.length
+      ? windValues.reduce((sum, value) => sum + value, 0) / windValues.length
+      : null;
+    const gustValues = warningPoints
+      .map((point) => point.windGustMph)
+      .filter((value): value is number => value != null);
+    const peakWind = gustValues.length ? Math.max(...gustValues) : null;
+    return { averageWind, peakWind };
+  };
+
+  const alertDotColor = (alert: WarningType) => {
     if (alert === "rain") return chartColors.alertRain;
-    if (alert === "light-precip") return chartColors.alertLight;
-    if (alert === "snow-ongoing") return chartColors.alertSnow;
+    if (alert === "wind") return chartColors.wind;
     return chartColors.alertDefault;
   };
 
@@ -467,7 +595,7 @@ export default function CustomChart({ data, timeZone }: CustomChartProps) {
                 <Stack spacing={1}>
                   {consolidatedWarnings.map((warning) => (
                     <Stack
-                      key={warning.alert}
+                      key={`${warning.alert}-${warning.startIndex}-${warning.endIndex}`}
                       direction="row"
                       spacing={1.5}
                       alignItems="flex-start"
@@ -475,8 +603,8 @@ export default function CustomChart({ data, timeZone }: CustomChartProps) {
                       {warning.alert === "rain" ? (
                         <Box
                           sx={{
-                            width: 18,
-                            height: 18,
+                            width: 32,
+                            height: 32,
                             mt: 0.35,
                             display: "flex",
                             alignItems: "center",
@@ -484,8 +612,25 @@ export default function CustomChart({ data, timeZone }: CustomChartProps) {
                           }}
                         >
                           <CloudRain
-                            size={16}
-                            color={chartColors.alertRain}
+                            size={32}
+                            color={chartColors.precipProbability}
+                            strokeWidth={2.25}
+                          />
+                        </Box>
+                      ) : warning.alert === "wind" ? (
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            mt: 0.35,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Wind
+                            size={32}
+                            color={chartColors.wind}
                             strokeWidth={2.25}
                           />
                         </Box>
@@ -501,17 +646,38 @@ export default function CustomChart({ data, timeZone }: CustomChartProps) {
                       )}
                       <Box>
                         <Typography variant="body2" fontWeight={700}>
-                          {warning.startLabel === warning.endLabel
-                            ? warning.startLabel
-                            : `${warning.startLabel} - ${warning.endLabel}`}
+                          {`${warning.startLabel} - ${warning.endLabel}`}
                         </Typography>
+                        {warning.alert === "rain" && (
+                          <Typography variant="body2" color="text.secondary">
+                            {(() => {
+                              const summary = getRainSummary(warning);
+                              if (!summary) return "Avg chance — · Total —";
+                              return `Average chance ${formatPercent(
+                                summary.averageChance,
+                              )}, total precipitation ${formatInches(summary.totalPrecip)}`;
+                            })()}
+                          </Typography>
+                        )}
+                        {warning.alert === "wind" && (
+                          <Typography variant="body2" color="text.secondary">
+                            {(() => {
+                              const summary = getWindSummary(warning);
+                              if (!summary) return "";
+                              return `Average ${formatMph(summary.averageWind)}, peak ${summary.peakWind != null
+                                ? formatMph(summary.peakWind)
+                                : "unavailable"
+                                }`;
+                            })()}
+                          </Typography>
+                        )}
                       </Box>
                     </Stack>
                   ))}
                 </Stack>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  No precipitation concerns.
+                  No active warnings.
                 </Typography>
               )}
             </Stack>
@@ -533,7 +699,7 @@ export default function CustomChart({ data, timeZone }: CustomChartProps) {
                   {bluebirdWindows.map((point) => (
                     <Chip
                       key={point.startTime}
-                      label={`${point.timeLabel}${point.alert === "light-precip" ? " · light precip" : ""}`}
+                      label={point.timeLabel}
                       color="primary"
                       variant="outlined"
                       size="small"
