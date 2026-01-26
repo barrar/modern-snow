@@ -1,6 +1,6 @@
-import { Box, Container, Paper, Stack, Typography } from "@mui/material";
 import { Suspense } from "react";
-import LocationMenu from "../components/LocationMenu";
+import { Box, Container, Paper, Stack, Typography } from "@mui/material";
+import LocationMenu from "@/components/LocationMenu";
 import SnowForecast from "../components/SnowForecast";
 import { surfaceGradient } from "../data/chartStyles";
 import {

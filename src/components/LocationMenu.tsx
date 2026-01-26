@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FormControl,
   InputLabel,
@@ -8,8 +10,6 @@ import {
   Stack,
   type SelectChangeEvent,
 } from "@mui/material";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
 import type {
   ForecastLocation,
   ForecastState,
@@ -44,12 +44,6 @@ export default function LocationMenu({
     stateLocations[0]?.id ??
     value;
 
-  const pushParams = (params: URLSearchParams) => {
-    const query = params.toString();
-    router.push(query ? `/?${query}` : "/");
-    router.refresh();
-  };
-
   const handleLocationChange = (event: SelectChangeEvent) => {
     const nextLocation = event.target.value;
     const params = new URLSearchParams(searchParams?.toString());
@@ -60,7 +54,9 @@ export default function LocationMenu({
     if (locationMatch) {
       params.set("state", locationMatch.state);
     }
-    pushParams(params);
+    const query = params.toString();
+    router.push(query ? `/?${query}` : "/");
+    router.refresh();
   };
 
   const handleStateChange = (event: SelectChangeEvent) => {
@@ -75,7 +71,9 @@ export default function LocationMenu({
     } else {
       params.delete("location");
     }
-    pushParams(params);
+    const query = params.toString();
+    router.push(query ? `/?${query}` : "/");
+    router.refresh();
   };
 
   const handleTimeZoneChange = (event: SelectChangeEvent) => {
@@ -86,7 +84,9 @@ export default function LocationMenu({
     } else {
       params.delete("timezone");
     }
-    pushParams(params);
+    const query = params.toString();
+    router.push(query ? `/?${query}` : "/");
+    router.refresh();
   };
 
   useEffect(() => {
@@ -100,8 +100,10 @@ export default function LocationMenu({
     if (!match || match.id === timeZoneValue) return;
     const params = new URLSearchParams(searchParams?.toString());
     params.set("timezone", match.id);
-    pushParams(params);
-  }, [pushParams, searchParams, timeZoneOptions, timeZoneValue]);
+    const query = params.toString();
+    router.push(query ? `/?${query}` : "/");
+    router.refresh();
+  }, [router, searchParams, timeZoneOptions, timeZoneValue]);
 
   return (
     <Stack
