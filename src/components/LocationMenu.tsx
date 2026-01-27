@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   FormControl,
   InputLabel,
@@ -10,6 +8,8 @@ import {
   Stack,
   type SelectChangeEvent,
 } from "@mui/material";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import type {
   ForecastLocation,
   ForecastState,

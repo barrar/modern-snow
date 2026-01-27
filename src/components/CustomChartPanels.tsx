@@ -49,13 +49,6 @@ const chartPanelSx = {
   boxShadow: "0 24px 60px rgba(6, 12, 28, 0.45)",
 };
 
-const warningTone = (point: ChartPoint) => {
-  if (point.showRainRisk)
-    return { label: "Rain risk", color: "error" as const };
-  if (point.isBluebird) return { label: "Bluebird", color: "info" as const };
-  return null;
-};
-
 const renderSnowLabel = ({ x, y, width, value }: LabelProps) => {
   if (value == null) return null;
   const numeric = typeof value === "number" ? value : Number(value);
@@ -150,110 +143,139 @@ type MobileLegendProps = {
 };
 
 const MobileLegend = ({ point }: MobileLegendProps) => {
-  if (!point) {
-    return (
-      <Typography variant="caption" color="text.secondary">
-        Select an area of the chart to view details.
-      </Typography>
-    );
-  }
-
-  const tone = warningTone(point);
+  const placeholder = "-";
+  const titleText = point
+    ? point.rangeLabel
+    : "Select an area of the chart to view details.";
 
   return (
     <Stack spacing={1}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="subtitle2" fontWeight={700}>
-          {point.rangeLabel}
+      <Stack direction="row" justifyContent="center" alignItems="center">
+        <Typography variant="subtitle1" fontWeight={700}>
+          {titleText}
         </Typography>
-        <Stack direction="row" spacing={1}>
-          {point.isBluebird && (
-            <Chip
-              size="small"
-              label="Bluebird"
-              color="primary"
-              variant="outlined"
-            />
-          )}
-          {tone && (
-            <Chip
-              size="small"
-              label={tone.label}
-              color={tone.color}
-              variant="filled"
-            />
-          )}
-        </Stack>
       </Stack>
       <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
-      <Stack spacing={0.75}>
-        <MetricRow
-          label="Snow"
-          value={`${point.inches ?? 0}"`}
-          color={chartColors.snow}
-          icon={
-            <Snowflake
-              size={18}
-              color={chartColors.snow}
-              strokeWidth={2.25}
-            />
-          }
-        />
-        <MetricRow
-          label="Precipitation"
-          value={`${point.precipInches ?? 0}"`}
-          color={chartColors.precipProbability}
-          icon={
-            <CloudRain
-              size={18}
-              color={chartColors.precipProbability}
-              strokeWidth={2.25}
-            />
-          }
-        />
-        <MetricRow
-          label="Rain chance"
-          value={`${point.precipProbability ?? 0}%`}
-          color={chartColors.precipProbability}
-          icon={
-            <Droplets
-              size={18}
-              color={chartColors.precipProbability}
-              strokeWidth={2.25}
-            />
-          }
-        />
-        {point.temperatureF != null && (
-          <MetricRow
-            label="Temperature"
-            value={`${Math.round(point.temperatureF)}°F`}
-            color={chartColors.temperature}
-            icon={
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: 1.5,
+          textAlign: "center",
+        }}
+      >
+        {[
+          {
+            key: "snow",
+            label: "Snow",
+            value: point ? `${point.inches ?? 0}"` : placeholder,
+            color: chartColors.snow,
+            icon: (
+              <Snowflake
+                size={18}
+                color={chartColors.snow}
+                strokeWidth={2.25}
+              />
+            ),
+          },
+          {
+            key: "precip",
+            label: "Precipitation",
+            value: point ? `${point.precipInches ?? 0}"` : placeholder,
+            color: chartColors.precipProbability,
+            icon: (
+              <CloudRain
+                size={18}
+                color={chartColors.precipProbability}
+                strokeWidth={2.25}
+              />
+            ),
+          },
+          {
+            key: "chance",
+            label: "Rain chance",
+            value: point ? `${point.precipProbability ?? 0}%` : placeholder,
+            color: chartColors.precipProbability,
+            icon: (
+              <Droplets
+                size={18}
+                color={chartColors.precipProbability}
+                strokeWidth={2.25}
+              />
+            ),
+          },
+          {
+            key: "temp",
+            label: "Temperature",
+            value:
+              point && point.temperatureF != null
+                ? `${Math.round(point.temperatureF)}°F`
+                : placeholder,
+            color: chartColors.temperature,
+            icon: (
               <Thermometer
                 size={18}
                 color={chartColors.temperature}
                 strokeWidth={2.25}
               />
-            }
-          />
-        )}
-        {point.windMph != null && (
-          <MetricRow
-            label="Wind"
-            value={`${point.windMph} mph`}
-            color={chartColors.wind}
-            icon={<Wind size={18} color={chartColors.wind} strokeWidth={2.25} />}
-          />
-        )}
-        {point.cloudCover != null && (
-          <MetricRow
-            label="Cloud cover"
-            value={`${point.cloudCover}%`}
-            color={chartColors.cloud}
-            icon={<Cloud size={18} color={chartColors.cloud} strokeWidth={2.25} />}
-          />
-        )}
-      </Stack>
+            ),
+          },
+          {
+            key: "wind",
+            label: "Wind",
+            value:
+              point && point.windMph != null
+                ? `${point.windMph} mph`
+                : placeholder,
+            color: chartColors.wind,
+            icon: (
+              <Wind size={18} color={chartColors.wind} strokeWidth={2.25} />
+            ),
+          },
+          {
+            key: "cloud",
+            label: "Cloud cover",
+            value:
+              point && point.cloudCover != null
+                ? `${point.cloudCover}%`
+                : placeholder,
+            color: chartColors.cloud,
+            icon: (
+              <Cloud size={18} color={chartColors.cloud} strokeWidth={2.25} />
+            ),
+          },
+        ].map((metric) => (
+          <Stack
+            key={metric.key}
+            spacing={0.4}
+            alignItems="center"
+            sx={{ flex: "0 1 110px" }}
+          >
+            <Box
+              sx={{
+                width: 20,
+                height: 20,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {metric.icon}
+            </Box>
+            <Typography variant="caption" color={metric.color} fontWeight={700}>
+              {metric.label}
+            </Typography>
+            <Typography
+              variant="subtitle1"
+              color={metric.color}
+              fontWeight={700}
+            >
+              {metric.value}
+            </Typography>
+          </Stack>
+        ))}
+      </Box>
     </Stack>
   );
 };
@@ -274,7 +296,6 @@ const ForecastTooltip = ({
     typeof activeIndex === "number" ? points[activeIndex] : undefined;
   const point = payloadPoint ?? fallbackPoint;
   if (!point) return null;
-  const tone = warningTone(point);
   return (
     <Paper
       elevation={0}
@@ -299,24 +320,6 @@ const ForecastTooltip = ({
           <Typography variant="subtitle1" fontWeight={700}>
             {point.rangeLabel}
           </Typography>
-          <Stack direction="row" spacing={1}>
-            {point.isBluebird && (
-              <Chip
-                size="small"
-                label="Bluebird"
-                color="primary"
-                variant="outlined"
-              />
-            )}
-            {tone && (
-              <Chip
-                size="small"
-                label={tone.label}
-                color={tone.color}
-                variant="filled"
-              />
-            )}
-          </Stack>
         </Stack>
         <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
         <Stack spacing={0.75}>
@@ -375,7 +378,9 @@ const ForecastTooltip = ({
               label="Wind"
               value={`${point.windMph} mph`}
               color={chartColors.wind}
-              icon={<Wind size={18} color={chartColors.wind} strokeWidth={2.25} />}
+              icon={
+                <Wind size={18} color={chartColors.wind} strokeWidth={2.25} />
+              }
             />
           )}
           {point.cloudCover != null && (
@@ -383,7 +388,9 @@ const ForecastTooltip = ({
               label="Cloud cover"
               value={`${point.cloudCover}%`}
               color={chartColors.cloud}
-              icon={<Cloud size={18} color={chartColors.cloud} strokeWidth={2.25} />}
+              icon={
+                <Cloud size={18} color={chartColors.cloud} strokeWidth={2.25} />
+              }
             />
           )}
         </Stack>
@@ -490,16 +497,18 @@ type ChartLegendProps = {
 const ChartLegend = ({ items }: ChartLegendProps) => (
   <Stack
     direction="row"
-    spacing={2}
+    spacing={3}
     flexWrap="wrap"
-    justifyContent={{ xs: "flex-start", md: "flex-end" }}
+    justifyContent="center"
     alignItems="center"
     sx={{ width: { xs: "100%", md: "auto" } }}
   >
     {items.map((series) => (
       <Stack key={series.id} direction="row" spacing={0.75} alignItems="center">
         <Box sx={{ width: 10, height: 10, backgroundColor: series.color }} />
-        <Typography variant="caption">{series.label}</Typography>
+        <Typography variant="body2" fontWeight={700}>
+          {series.label}
+        </Typography>
       </Stack>
     ))}
   </Stack>
@@ -636,7 +645,12 @@ const ChartSurface = ({
             axisLine={{ stroke: "rgba(203, 213, 245, 0.35)" }}
             tickLine={{ stroke: "rgba(203, 213, 245, 0.35)" }}
           />
-          <YAxis yAxisId="snow" hide domain={[0, "auto"]} padding={{ top: 20 }} />
+          <YAxis
+            yAxisId="snow"
+            hide
+            domain={[0, "auto"]}
+            padding={{ top: 20 }}
+          />
           <YAxis yAxisId="weather" hide domain={[0, 100]} />
           {!isMobile && (
             <Tooltip<number, string>
@@ -712,9 +726,8 @@ export const ChartPanel = ({
     <Stack
       direction={{ xs: "column", md: "row" }}
       justifyContent="space-between"
-      alignItems={{ xs: "flex-start", md: "center" }}
+      alignItems="center"
       spacing={2}
-      sx={{ mt: 2 }}
     >
       {isMobile ? (
         <MobileLegend point={activePoint} />

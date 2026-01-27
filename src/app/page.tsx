@@ -1,15 +1,22 @@
-import { Suspense } from "react";
-import { Box, Button, Container, Paper, Stack, Typography } from "@mui/material";
 import LocationMenu from "@/components/LocationMenu";
 import SnowForecast from "@/components/SnowForecast";
+import { surfaceGradient } from "@/data/chartStyles";
 import {
   forecastLocations,
   forecastStates,
   getForecastLocation,
   getForecastLocationsForState,
 } from "@/data/forecastLocations";
-import { surfaceGradient } from "@/data/chartStyles";
 import { resolveTimeZoneId, timeZoneOptions } from "@/data/timeZones";
+import {
+  Box,
+  Button,
+  Container,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { Suspense } from "react";
 
 type SearchParams = {
   location?: string | string[];
@@ -50,49 +57,36 @@ const resolveForecastSelection = (searchParams?: SearchParams) => {
 
 export default async function Page({ searchParams }: PageProps) {
   const resolvedSearchParams = await Promise.resolve(searchParams);
-  const { locationId, timeZoneValue, menu } = resolveForecastSelection(
-    resolvedSearchParams,
-  );
+  const { locationId, timeZoneValue, menu } =
+    resolveForecastSelection(resolvedSearchParams);
 
   return (
-    <Box sx={{ minHeight: "100vh", py: { xs: 4, md: 6 } }}>
+    <Box sx={{ minHeight: "100vh", px: { xs: 0, md: 1 }, py: 3 }}>
       <Container maxWidth="lg">
-        <Stack spacing={3.5}>
+        <Stack spacing={3}>
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 3, md: 4 },
+              p: { xs: 2, md: 3 },
               background: surfaceGradient,
               boxShadow: "0 20px 50px rgba(6, 12, 28, 0.35)",
             }}
           >
-            <Stack spacing={2.5}>
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                spacing={2}
-                alignItems={{ xs: "flex-start", md: "center" }}
-                justifyContent="space-between"
-              >
-                <Stack spacing={1}>
-                  <Typography variant="h3" component="h1">
-                    Powder Meter
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{ color: "text.secondary", maxWidth: 820 }}
-                  >
-                    A quick, visual snow centric forcast
-                  </Typography>
-                </Stack>
+            <Stack spacing={3}>
+              <Stack spacing={1}>
+                <Typography variant="h3" component="h1">
+                  Powder Meter
+                </Typography>
+                <Typography variant="body1">
+                  A quick, visual snow centric forcast
+                </Typography>
               </Stack>
               <LocationMenu {...menu} />
             </Stack>
           </Paper>
 
           <Suspense
-            fallback={
-              <Typography variant="body2">Loading forecast...</Typography>
-            }
+            fallback={<Typography variant="h4">Loading forecast...</Typography>}
           >
             <SnowForecast locationId={locationId} timeZoneId={timeZoneValue} />
           </Suspense>
@@ -101,15 +95,14 @@ export default async function Page({ searchParams }: PageProps) {
             component="footer"
             sx={{
               mt: { xs: 4, md: 5 },
-              pt: 2.5,
-              borderTop: "1px solid rgba(226, 232, 255, 0.16)",
+              pt: 2,
+              borderTop: "1px solid rgba(226, 232, 255, 0.2)",
             }}
           >
             <Stack
-              direction={{ xs: "column", md: "row" }}
-              spacing={1}
-              alignItems={{ xs: "flex-start", md: "center" }}
+              direction={{ xs: "column", sm: "row" }}
               justifyContent="space-between"
+              spacing={2}
             >
               <Typography variant="body2" color="text.secondary">
                 {`\u00a9 ${new Date().getFullYear()} Jeremiah Barrar`}

@@ -1,10 +1,5 @@
 "use client";
 
-import { Grid, Stack, useMediaQuery } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import { useState } from "react";
-import type { ForecastPoint } from "@/data/getWeatherData";
-import type { TimeZoneId } from "@/data/timeZones";
 import {
   buildBluebirdWindows,
   buildChartData,
@@ -21,6 +16,11 @@ import {
   ChartPanel,
   WarningsPanel,
 } from "@/components/CustomChartPanels";
+import type { ForecastPoint } from "@/data/getWeatherData";
+import type { TimeZoneId } from "@/data/timeZones";
+import { Grid, Stack, useMediaQuery } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { useState } from "react";
 
 type CustomChartClientProps = {
   data: ForecastPoint[];
@@ -37,14 +37,16 @@ export default function CustomChartClient({
 
   const formatters = createTimeFormatters(timeZone);
   const chartData = buildChartData(data, formatters);
-  const warningDetails = buildWarningDetails(buildWarnings(chartData), chartData);
+  const warningDetails = buildWarningDetails(
+    buildWarnings(chartData),
+    chartData,
+  );
   const bluebirdWindows = buildBluebirdWindows(chartData);
   const xAxisTicks = buildXAxisTicks(chartData);
   const { chartHeight, chartMargin } = buildChartLayout(isMobile);
   const resolvedIndex =
     activeIndex != null && chartData[activeIndex] ? activeIndex : null;
-  const activePoint =
-    resolvedIndex != null ? chartData[resolvedIndex] : null;
+  const activePoint = resolvedIndex != null ? chartData[resolvedIndex] : null;
 
   return (
     <Stack spacing={3}>
