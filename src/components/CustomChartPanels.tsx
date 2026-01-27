@@ -161,7 +161,7 @@ const MobileLegend = ({ point }: MobileLegendProps) => {
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
-          gap: 1.5,
+          rowGap: 1,
           textAlign: "center",
         }}
       >
@@ -248,9 +248,8 @@ const MobileLegend = ({ point }: MobileLegendProps) => {
         ].map((metric) => (
           <Stack
             key={metric.key}
-            spacing={0.4}
             alignItems="center"
-            sx={{ flex: "0 1 110px" }}
+            sx={{ flex: "0 1 100px" }}
           >
             <Box
               sx={{
