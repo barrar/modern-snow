@@ -1,33 +1,20 @@
 "use client";
 
-import type { BluebirdWindow, ChartMargin, ChartPoint, LegendItem, LineSeries, WarningDetail } from "@/components/customChartData";
-import { chartColors, surfaceGradient, tooltipGradient } from "@/data/chartStyles";
+import type { BluebirdWindow, ChartMargin, ChartPoint, LineSeries, WarningDetail } from "@/components/customChartData";
+import { chartColors, surfaceGradient } from "@/data/chartStyles";
 import { Box, Chip, Divider, Paper, Stack, Typography } from "@mui/material";
 import { Cloud, CloudRain, Droplets, Snowflake, Thermometer, Wind } from "lucide-react";
 import type { ReactNode } from "react";
-import {
-  Bar,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  LabelList,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  type LabelProps,
-  type TooltipContentProps,
-} from "recharts";
+import { Bar, Cell, ComposedChart, LabelList, Line, ResponsiveContainer, XAxis, YAxis, type LabelProps } from "recharts";
 
 const panelSx = {
-  p: 3,
+  p: { xs: 2, md: 3 },
   background: surfaceGradient,
   boxShadow: "0 18px 48px rgba(6, 12, 28, 0.4)",
 };
 
 const chartPanelSx = {
-  p: { xs: 2.5, md: 3.5 },
+  p: { xs: 2, md: 3 },
   background: surfaceGradient,
   boxShadow: "0 24px 60px rgba(6, 12, 28, 0.45)",
 };
@@ -77,25 +64,12 @@ const resolveSnowBarColor = (point: ChartPoint) => {
   const chance = point.precipProbability;
   if (chance != null && Number.isFinite(chance)) {
     if (chance >= 70) return chartColors.snowHighChance;
-    if (chance >= 50) return chartColors.snow;
+    if (chance >= 40) return chartColors.snow;
   }
   return chartColors.snowLowChance;
 };
 
 const hasSnowAmount = (point: ChartPoint | null) => (point?.inches ?? 0) > 0;
-const resolvePrecipLabel = (point: ChartPoint | null) => (point?.precipitationType === "rain" ? "Rain" : "Precipitation");
-const resolveChanceLabel = (point: ChartPoint | null) => {
-  if (hasSnowAmount(point)) return "Snow chance";
-  return point?.precipitationType === "rain" ? "Rain chance" : "Precip chance";
-};
-
-type MetricRowProps = {
-  label: string;
-  value: ReactNode;
-  color: string;
-  icon?: ReactNode;
-};
-
 type MetricItem = {
   key: string;
   label: string;
@@ -104,97 +78,77 @@ type MetricItem = {
   icon: ReactNode;
 };
 
-const MetricRow = ({ label, value, color, icon }: MetricRowProps) => (
-  <Stack direction="row" justifyContent="space-between" alignItems="center">
-    <Stack direction="row" spacing={1} alignItems="center">
-      {icon ? (
-        <Box
-          sx={{
-            width: 16,
-            height: 16,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {icon}
-        </Box>
-      ) : (
-        <Box
-          sx={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            backgroundColor: color,
-            boxShadow: "0 0 8px rgba(15, 23, 42, 0.45)",
-          }}
-        />
-      )}
-      <Typography variant="subtitle1" color={color} fontWeight={700}>
-        {label}
-      </Typography>
-    </Stack>
-    <Typography variant="subtitle1" color={color} fontWeight={700}>
-      {value}
-    </Typography>
-  </Stack>
-);
-
 const buildPrecipMetrics = (point: ChartPoint | null, placeholder: string): MetricItem[] => {
-  const hasSnow = hasSnowAmount(point);
   const metrics: MetricItem[] = [];
-  const showSnowAmount = point && point.inches != null && point.inches !== 0;
-  const showPrecipAmount = !hasSnow && (point?.precipInches ?? 0) > 0;
-  const hasAmount = showSnowAmount || showPrecipAmount;
+  const isRain = point?.precipitationType === "rain";
+  const snowAmount = point?.inches ?? 0;
+  const rainAmount = point?.precipInches ?? 0;
+  const hasSnow = snowAmount > 0;
+  const hasRain = rainAmount > 0;
+  const hasAmount = isRain ? hasRain : hasSnow;
+  const amountValue = isRain ? rainAmount : snowAmount;
+  const amountLabel = isRain ? "Rain" : "Snow";
+  const amountColor = isRain ? chartColors.rain : chartColors.snowHighChance;
+  const amountIcon = isRain ? (
+    <CloudRain size={18} color={amountColor} strokeWidth={2.25} />
+  ) : (
+    <Snowflake size={18} color={amountColor} strokeWidth={2.25} />
+  );
 
-  if (showSnowAmount) {
-    metrics.push({
-      key: "snow",
-      label: "Snow",
-      value: `${point.inches}"`,
-      color: chartColors.snowHighChance,
-      icon: <Snowflake size={18} color={chartColors.snowHighChance} strokeWidth={2.25} />,
-    });
-  }
+  metrics.push({
+    key: "precip",
+    label: amountLabel,
+    value: point ? (hasAmount ? `${amountValue}"` : '0"') : placeholder,
+    color: amountColor,
+    icon: amountIcon,
+  });
 
-  if (showPrecipAmount) {
-    metrics.push({
-      key: "precip",
-      label: resolvePrecipLabel(point),
-      value: point ? `${point.precipInches ?? 0}"` : placeholder,
-      color: chartColors.precipProbability,
-      icon: <CloudRain size={18} color={chartColors.precipProbability} strokeWidth={2.25} />,
-    });
-  }
+  const chanceLabel = !point || hasSnowAmount(point) || point.precipitationType !== "rain" ? "Snow chance" : "Rain chance";
+  const chanceColor = point?.precipitationType === "rain" ? chartColors.rain : chartColors.snowHighChance;
+  const chanceValue = point ? `${hasAmount ? point.precipProbability ?? 0 : 0}%` : placeholder;
 
-  if (hasAmount) {
-    const chanceLabel = point ? resolveChanceLabel(point) : "Snow chance";
-    const chanceColor = hasSnow ? chartColors.snowHighChance : chartColors.rain;
-    const chanceValue = point ? `${point.precipProbability ?? 0}%` : placeholder;
-
-    metrics.push({
-      key: "chance",
-      label: chanceLabel,
-      value: chanceValue,
-      color: chanceColor,
-      icon: hasSnow ? (
-        <Snowflake size={18} color={chanceColor} strokeWidth={2.25} />
-      ) : (
+  metrics.push({
+    key: "chance",
+    label: chanceLabel,
+    value: chanceValue,
+    color: chanceColor,
+    icon:
+      point?.precipitationType === "rain" ? (
         <Droplets size={18} color={chanceColor} strokeWidth={2.25} />
+      ) : (
+        <Snowflake size={18} color={chanceColor} strokeWidth={2.25} />
       ),
-    });
-  }
+  });
 
   return metrics;
 };
 
-type MobileLegendProps = {
+type ChartInteractionPayload = {
+  activeTooltipIndex?: number;
+  activeLabel?: string;
+  activePayload?: Array<{ payload?: ChartPoint }>;
+} | null;
+
+const resolveChartIndex = (payload: ChartInteractionPayload, chartData: ChartPoint[]) => {
+  if (!payload) return null;
+  if (typeof payload.activeTooltipIndex === "number") return payload.activeTooltipIndex;
+  if (payload.activeLabel) {
+    const labelIndex = chartData.findIndex((point) => point.time === payload.activeLabel);
+    if (labelIndex >= 0) return labelIndex;
+  }
+  const payloadPoint = payload.activePayload?.[0]?.payload;
+  if (!payloadPoint) return null;
+  const matchIndex = chartData.findIndex((point) => point.time === payloadPoint.time && point.startTime === payloadPoint.startTime);
+  return matchIndex >= 0 ? matchIndex : null;
+};
+
+type ForecastLegendProps = {
   point: ChartPoint | null;
 };
 
-const MobileLegend = ({ point }: MobileLegendProps) => {
+const ForecastLegend = ({ point }: ForecastLegendProps) => {
   const placeholder = "-";
-  const titleText = point ? point.rangeLabel : "Select an area of the chart to view details.";
+  const titleText = point ? point.rangeLabel : "Select a chart area to view details.";
   const precipMetrics = buildPrecipMetrics(point, placeholder);
 
   return (
@@ -263,72 +217,6 @@ const MobileLegend = ({ point }: MobileLegendProps) => {
   );
 };
 
-type ForecastTooltipProps = TooltipContentProps<number, string> & {
-  points: ChartPoint[];
-};
-
-const ForecastTooltip = ({ active, payload, activeIndex, points }: ForecastTooltipProps) => {
-  if (!active) return null;
-  const payloadPoint = payload?.[0]?.payload as ChartPoint | undefined;
-  const fallbackPoint = typeof activeIndex === "number" ? points[activeIndex] : undefined;
-  const point = payloadPoint ?? fallbackPoint;
-  if (!point) return null;
-  const precipMetrics = buildPrecipMetrics(point, "-");
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2.25,
-        minWidth: 220,
-        backdropFilter: "blur(14px)",
-        background: tooltipGradient,
-        boxShadow: "0 22px 60px rgba(4, 6, 18, 0.55)",
-        "& .MuiTypography-root": {
-          fontWeight: 700,
-        },
-      }}
-    >
-      <Stack spacing={1.25}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-          <Typography variant="subtitle1" fontWeight={700}>
-            {point.rangeLabel}
-          </Typography>
-        </Stack>
-        <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
-        <Stack spacing={0.75}>
-          {precipMetrics.map((metric) => (
-            <MetricRow key={metric.key} label={metric.label} value={metric.value} color={metric.color} icon={metric.icon} />
-          ))}
-          {point.temperatureF != null && (
-            <MetricRow
-              label="Temperature"
-              value={`${Math.round(point.temperatureF)}\u00b0F`}
-              color={chartColors.temperature}
-              icon={<Thermometer size={18} color={chartColors.temperature} strokeWidth={2.25} />}
-            />
-          )}
-          {point.windMph != null && (
-            <MetricRow
-              label="Wind"
-              value={`${point.windMph} mph`}
-              color={chartColors.wind}
-              icon={<Wind size={18} color={chartColors.wind} strokeWidth={2.25} />}
-            />
-          )}
-          {point.cloudCover != null && (
-            <MetricRow
-              label="Cloud cover"
-              value={`${point.cloudCover}%`}
-              color={chartColors.cloud}
-              icon={<Cloud size={18} color={chartColors.cloud} strokeWidth={2.25} />}
-            />
-          )}
-        </Stack>
-      </Stack>
-    </Paper>
-  );
-};
-
 type WarningsPanelProps = {
   warnings: WarningDetail[];
 };
@@ -354,7 +242,7 @@ export const WarningsPanel = ({ warnings }: WarningsPanelProps) => (
                 }}
               >
                 {warning.alert === "rain" ? (
-                  <CloudRain size={32} color={chartColors.precipProbability} strokeWidth={2.25} />
+                  <CloudRain size={32} color={chartColors.rain} strokeWidth={2.25} />
                 ) : (
                   <Wind size={32} color={chartColors.wind} strokeWidth={2.25} />
                 )}
@@ -411,23 +299,6 @@ export const BluebirdPanel = ({ windows }: BluebirdPanelProps) => (
   </Paper>
 );
 
-type ChartLegendProps = {
-  items: LegendItem[];
-};
-
-const ChartLegend = ({ items }: ChartLegendProps) => (
-  <Stack direction="row" spacing={3} flexWrap="wrap" justifyContent="center" alignItems="center" sx={{ width: { xs: "100%", md: "auto" } }}>
-    {items.map((series) => (
-      <Stack key={series.id} direction="row" spacing={0.75} alignItems="center">
-        <Box sx={{ width: 10, height: 10, backgroundColor: series.color }} />
-        <Typography variant="body2" fontWeight={700}>
-          {series.label}
-        </Typography>
-      </Stack>
-    ))}
-  </Stack>
-);
-
 type ChartSurfaceProps = {
   chartData: ChartPoint[];
   xAxisTicks: string[];
@@ -436,7 +307,7 @@ type ChartSurfaceProps = {
   chartHeight: number;
   chartMargin: ChartMargin;
   lineSeries: LineSeries[];
-  onSelectPoint?: (index: number) => void;
+  onSelectPoint: (index: number) => void;
 };
 
 const ChartSurface = ({
@@ -500,34 +371,16 @@ const ChartSurface = ({
           margin={chartMargin}
           barGap={-16}
           barCategoryGap="30%"
+          onMouseMove={(event) => {
+            const index = resolveChartIndex(event as ChartInteractionPayload, chartData);
+            if (index != null) onSelectPoint(index);
+          }}
           onClick={(event) => {
             if (!onSelectPoint) return;
-            const payload = event as {
-              activeTooltipIndex?: number;
-              activeLabel?: string;
-              activePayload?: Array<{ payload?: ChartPoint }>;
-            } | null;
-            const index = payload && typeof payload.activeTooltipIndex === "number" ? payload.activeTooltipIndex : null;
-            if (index != null) {
-              onSelectPoint(index);
-              return;
-            }
-            if (payload?.activeLabel) {
-              const labelIndex = chartData.findIndex((point) => point.time === payload.activeLabel);
-              if (labelIndex >= 0) {
-                onSelectPoint(labelIndex);
-                return;
-              }
-            }
-            const payloadPoint = payload?.activePayload?.[0]?.payload;
-            if (!payloadPoint) return;
-            const matchIndex = chartData.findIndex(
-              (point) => point.time === payloadPoint.time && point.startTime === payloadPoint.startTime,
-            );
-            if (matchIndex >= 0) onSelectPoint(matchIndex);
+            const index = resolveChartIndex(event as ChartInteractionPayload, chartData);
+            if (index != null) onSelectPoint(index);
           }}
         >
-          <CartesianGrid vertical={false} stroke="rgba(203, 213, 245, 0.18)" strokeDasharray="4 6" />
           <XAxis
             dataKey="time"
             ticks={xAxisTicks}
@@ -543,15 +396,6 @@ const ChartSurface = ({
           />
           <YAxis yAxisId="snow" hide domain={[0, "auto"]} padding={{ top: 20 }} />
           <YAxis yAxisId="weather" hide domain={[0, 100]} />
-          {!isMobile && (
-            <Tooltip<number, string>
-              content={(props) => <ForecastTooltip {...props} points={chartData} />}
-              cursor={{ stroke: "rgba(219, 231, 255, 0.25)" }}
-              filterNull={false}
-              shared
-              wrapperStyle={{ outline: "none" }}
-            />
-          )}
           <Bar yAxisId="weather" dataKey="precipProbabilityChart" name="Precip chance (%)" fill={chartColors.rain} barSize={22}>
             {chartData.map((point) => (
               <Cell key={`rain-${point.time}`} fill={chartColors.rain} />
@@ -588,10 +432,9 @@ type ChartPanelProps = {
   isMobile: boolean;
   chartHeight: number;
   chartMargin: ChartMargin;
-  legendItems: LegendItem[];
   lineSeries: LineSeries[];
   activePoint: ChartPoint | null;
-  onSelectPoint?: (index: number) => void;
+  onSelectPoint: (index: number) => void;
 };
 
 export const ChartPanel = ({
@@ -601,14 +444,15 @@ export const ChartPanel = ({
   isMobile,
   chartHeight,
   chartMargin,
-  legendItems,
   lineSeries,
   activePoint,
   onSelectPoint,
 }: ChartPanelProps) => (
   <Paper elevation={0} sx={chartPanelSx}>
-    <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems="center" spacing={2}>
-      {isMobile ? <MobileLegend point={activePoint} /> : <ChartLegend items={legendItems} />}
+    <Stack direction="column" justifyContent="space-between" alignItems="center" spacing={2}>
+      <Box sx={{ flex: 1, width: "100%" }}>
+        <ForecastLegend point={activePoint} />
+      </Box>
     </Stack>
 
     <ChartSurface

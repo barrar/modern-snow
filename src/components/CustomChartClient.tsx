@@ -8,7 +8,6 @@ import {
   buildWarnings,
   buildXAxisTicks,
   createTimeFormatters,
-  legendItems,
   lineSeries,
 } from "@/components/customChartData";
 import { BluebirdPanel, ChartPanel, WarningsPanel } from "@/components/CustomChartPanels";
@@ -56,10 +55,9 @@ export default function CustomChartClient({ data, timeZone }: CustomChartClientP
         isMobile={isMobile}
         chartHeight={chartHeight}
         chartMargin={chartMargin}
-        legendItems={legendItems}
         lineSeries={lineSeries}
         activePoint={activePoint}
-        onSelectPoint={isMobile ? setActiveIndex : undefined}
+        onSelectPoint={setActiveIndex}
       />
     </Stack>
   );

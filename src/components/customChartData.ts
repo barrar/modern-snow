@@ -7,9 +7,6 @@ const rainPrecipThreshold = 0.02;
 const windWarningThreshold = 20;
 const maxWarningRangeMs = 24 * 60 * 60 * 1000;
 
-const missingValue = "\u2014";
-const summarySeparator = "\u00b7";
-
 export type ChartPoint = ForecastPoint & {
   peakWindMph: number | null;
   timeLabel: string;
@@ -107,18 +104,18 @@ export const legendItems: LegendItem[] = [
 ];
 
 const formatMph = (value: number | null) => {
-  if (value == null || !Number.isFinite(value)) return missingValue;
+  if (value == null || !Number.isFinite(value)) return "-";
   const rounded = Math.round(value * 10) / 10;
   return `${rounded} mph`;
 };
 
 const formatPercent = (value: number | null) => {
-  if (value == null || !Number.isFinite(value)) return missingValue;
+  if (value == null || !Number.isFinite(value)) return "-";
   return `${Math.round(value)}%`;
 };
 
 const formatInches = (value: number | null) => {
-  if (value == null || !Number.isFinite(value)) return missingValue;
+  if (value == null || !Number.isFinite(value)) return "-";
   const rounded = Math.round(value * 100) / 100;
   return `${rounded}"`;
 };
@@ -362,10 +359,10 @@ export const buildXAxisTicks = (chartData: ChartPoint[]) =>
 export const buildChartLayout = (isMobile: boolean): ChartLayout => {
   const chartHeight = isMobile ? 360 : 520;
   const chartMargin = {
-    top: isMobile ? 32 : 40,
-    right: isMobile ? 18 : 36,
-    bottom: isMobile ? 28 : 32,
-    left: isMobile ? 16 : 26,
+    top: isMobile ? 10 : 15,
+    right: isMobile ? 0 : 10,
+    bottom: isMobile ? 0 : 10,
+    left: isMobile ? 0 : 10,
   };
 
   return { chartHeight, chartMargin };
