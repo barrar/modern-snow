@@ -1,7 +1,12 @@
 import LocationMenu from "@/components/LocationMenu";
 import SnowForecast from "@/components/SnowForecast";
 import { surfaceGradient } from "@/data/chartStyles";
-import { forecastLocations, forecastStates, getForecastLocation, getForecastLocationsForState } from "@/data/forecastLocations";
+import {
+  forecastLocations,
+  forecastStates,
+  getForecastLocation,
+  getForecastLocationsForState,
+} from "@/data/forecastLocations";
 import { resolveTimeZoneId, timeZoneOptions } from "@/data/timeZones";
 import { Box, Button, Container, Paper, Stack, Typography } from "@mui/material";
 import { Suspense } from "react";
@@ -23,7 +28,8 @@ const resolveForecastSelection = (searchParams?: SearchParams) => {
   const locationFromParam = getForecastLocation(locationParam);
   const resolvedState = locationFromParam.state;
   const stateLocations = getForecastLocationsForState(resolvedState);
-  const location = stateLocations.find((item) => item.id === locationFromParam.id) ?? stateLocations[0] ?? locationFromParam;
+  const location =
+    stateLocations.find((item) => item.id === locationFromParam.id) ?? stateLocations[0] ?? locationFromParam;
 
   return {
     locationId: location.id,

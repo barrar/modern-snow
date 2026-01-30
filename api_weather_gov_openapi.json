@@ -401,7 +401,10 @@
       "get": {
         "description": "Returns a list of SIGMET/AIRMETs for the specified ATSU for the specified date",
         "operationId": "sigmetsByATSUByDate",
-        "parameters": [{ "$ref": "#/components/parameters/ATSUIdentifier" }, { "$ref": "#/components/parameters/Date" }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ATSUIdentifier" },
+          { "$ref": "#/components/parameters/Date" }
+        ],
         "responses": {
           "200": {
             "description": "success",
@@ -2270,7 +2273,20 @@
           "status": { "$ref": "#/components/schemas/AlertStatus" },
           "messageType": { "$ref": "#/components/schemas/AlertMessageType" },
           "category": {
-            "enum": ["Met", "Geo", "Safety", "Security", "Rescue", "Fire", "Health", "Env", "Transport", "Infra", "CBRNE", "Other"],
+            "enum": [
+              "Met",
+              "Geo",
+              "Safety",
+              "Security",
+              "Rescue",
+              "Fire",
+              "Health",
+              "Env",
+              "Transport",
+              "Infra",
+              "CBRNE",
+              "Other"
+            ],
             "type": "string",
             "description": "The code denoting the category of the subject event of the alert message."
           },
@@ -2565,7 +2581,10 @@
         "xml": { "name": "feed", "namespace": "http://www.w3.org/2005/Atom" }
       },
       "AreaCode": {
-        "oneOf": [{ "$ref": "#/components/schemas/StateTerritoryCode" }, { "$ref": "#/components/schemas/MarineAreaCode" }],
+        "oneOf": [
+          { "$ref": "#/components/schemas/StateTerritoryCode" },
+          { "$ref": "#/components/schemas/MarineAreaCode" }
+        ],
         "description": "State/territory codes and marine area codes"
       },
       "ATSUIdentifier": {
@@ -3102,7 +3121,24 @@
             "nullable": true
           },
           "windDirection": {
-            "enum": ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
+            "enum": [
+              "N",
+              "NNE",
+              "NE",
+              "ENE",
+              "E",
+              "ESE",
+              "SE",
+              "SSE",
+              "S",
+              "SSW",
+              "SW",
+              "WSW",
+              "W",
+              "WNW",
+              "NW",
+              "NNW"
+            ],
             "type": "string",
             "description": "The prevailing direction of the wind for the period, using a 16-point compass."
           },
@@ -3181,7 +3217,24 @@
             "nullable": true
           },
           "windDirection": {
-            "enum": ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
+            "enum": [
+              "N",
+              "NNE",
+              "NE",
+              "ENE",
+              "E",
+              "ESE",
+              "SE",
+              "SSE",
+              "S",
+              "SSW",
+              "SW",
+              "WSW",
+              "W",
+              "WNW",
+              "NW",
+              "NNW"
+            ],
             "type": "string",
             "description": "The prevailing direction of the wind for the period, using a 16-point compass."
           },
@@ -3883,7 +3936,10 @@
           "forecastGridData": { "type": "string", "format": "uri" },
           "observationStations": { "type": "string", "format": "uri" },
           "relativeLocation": {
-            "oneOf": [{ "$ref": "#/components/schemas/RelativeLocationGeoJson" }, { "$ref": "#/components/schemas/RelativeLocationJsonLd" }]
+            "oneOf": [
+              { "$ref": "#/components/schemas/RelativeLocationGeoJson" },
+              { "$ref": "#/components/schemas/RelativeLocationJsonLd" }
+            ]
           },
           "forecastZone": { "type": "string", "format": "uri" },
           "county": { "type": "string", "format": "uri" },
@@ -3990,7 +4046,10 @@
         "additionalProperties": false
       },
       "RegionCode": {
-        "oneOf": [{ "$ref": "#/components/schemas/LandRegionCode" }, { "$ref": "#/components/schemas/MarineRegionCode" }]
+        "oneOf": [
+          { "$ref": "#/components/schemas/LandRegionCode" },
+          { "$ref": "#/components/schemas/MarineRegionCode" }
+        ]
       },
       "RelativeLocation": {
         "type": "object",
@@ -4207,7 +4266,10 @@
           "effectiveDate": { "type": "string", "format": "date-time" },
           "expirationDate": { "type": "string", "format": "date-time" },
           "state": {
-            "oneOf": [{ "$ref": "#/components/schemas/StateTerritoryCode" }, { "enum": [""], "type": "string", "nullable": true }]
+            "oneOf": [
+              { "$ref": "#/components/schemas/StateTerritoryCode" },
+              { "enum": [""], "type": "string", "nullable": true }
+            ]
           },
           "forecastOffice": { "type": "string", "format": "uri" },
           "gridIdentifier": { "type": "string" },

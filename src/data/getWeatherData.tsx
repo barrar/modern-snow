@@ -205,7 +205,9 @@ export async function getWeatherData(locationId?: ForecastLocationId): Promise<F
   const baseSeries = snowfall.length ? snowfall : temperature.length ? temperature : precipProbability;
   const baseTimes = baseSeries.map((entry) => intervalStart(entry.validTime));
 
-  const snowByStart = new Map<string, number | null>(snowfall.map((entry) => [intervalStart(entry.validTime), parseNumber(entry.value)]));
+  const snowByStart = new Map<string, number | null>(
+    snowfall.map((entry) => [intervalStart(entry.validTime), parseNumber(entry.value)]),
+  );
   const precipByStart = new Map<string, number | null>(
     quantitativePrecip.map((entry) => [intervalStart(entry.validTime), parseNumber(entry.value)]),
   );
@@ -215,11 +217,15 @@ export async function getWeatherData(locationId?: ForecastLocationId): Promise<F
   const tempByStart = new Map<string, number | null>(
     temperature.map((entry) => [intervalStart(entry.validTime), parseNumber(entry.value)]),
   );
-  const windByStart = new Map<string, number | null>(windSpeed.map((entry) => [intervalStart(entry.validTime), parseNumber(entry.value)]));
+  const windByStart = new Map<string, number | null>(
+    windSpeed.map((entry) => [intervalStart(entry.validTime), parseNumber(entry.value)]),
+  );
   const windGustByStart = new Map<string, number | null>(
     windGust.map((entry) => [intervalStart(entry.validTime), parseNumber(entry.value)]),
   );
-  const cloudByStart = new Map<string, number | null>(skyCover.map((entry) => [intervalStart(entry.validTime), parseNumber(entry.value)]));
+  const cloudByStart = new Map<string, number | null>(
+    skyCover.map((entry) => [intervalStart(entry.validTime), parseNumber(entry.value)]),
+  );
 
   const tempValues = fillNearest(
     baseTimes,

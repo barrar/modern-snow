@@ -157,7 +157,9 @@ const buildTimeLabels = (currentDate: Date, nextDate: Date | null, formatters: T
   const endTimeLabel = nextDate
     ? `${formatters.dateFormatter.format(nextDate)}, ${normalizeTimeLabel(formatters.hourFormatter.format(nextDate))}`
     : timeLabel;
-  const rangeLabel = nextDate ? `${timeLabel} - ${normalizeTimeLabel(formatters.hourFormatter.format(nextDate))}` : timeLabel;
+  const rangeLabel = nextDate
+    ? `${timeLabel} - ${normalizeTimeLabel(formatters.hourFormatter.format(nextDate))}`
+    : timeLabel;
   const dayLabel = formatters.dayFormatter.format(currentDate);
 
   return { timeLabel, dateLabel, rangeLabel, dayLabel, endTimeLabel };
@@ -169,7 +171,11 @@ export const buildChartData = (data: ForecastPoint[], formatters: TimeFormatters
     const currentTimeMs = currentDate.getTime();
     const nextTimeMs = resolveNextTimeMs(data, idx, currentTimeMs);
     const nextDate = nextTimeMs ? new Date(nextTimeMs) : null;
-    const { timeLabel, dateLabel, rangeLabel, dayLabel, endTimeLabel } = buildTimeLabels(currentDate, nextDate, formatters);
+    const { timeLabel, dateLabel, rangeLabel, dayLabel, endTimeLabel } = buildTimeLabels(
+      currentDate,
+      nextDate,
+      formatters,
+    );
 
     const isRain = point.precipitationType === "rain";
     const probabilityValue = point.precipProbability ?? null;
@@ -180,7 +186,8 @@ export const buildChartData = (data: ForecastPoint[], formatters: TimeFormatters
     const adjustedProbability = suppressRain ? 0 : probabilityValue;
     const adjustedPrecipType = suppressRain ? "none" : point.precipitationType;
     const hasMeaningfulPrecip = adjustedPrecipInches > rainPrecipThreshold;
-    const hasRainProbability = adjustedProbability == null ? rainWarningThreshold <= 0 : adjustedProbability >= rainWarningThreshold;
+    const hasRainProbability =
+      adjustedProbability == null ? rainWarningThreshold <= 0 : adjustedProbability >= rainWarningThreshold;
     const showRainRisk = isRain && hasMeaningfulPrecip && hasRainProbability;
     const chartProbability = showRainRisk ? adjustedProbability : null;
     const peakWindMph = point.windGustMph ?? point.windMph;
@@ -208,7 +215,11 @@ export const buildChartData = (data: ForecastPoint[], formatters: TimeFormatters
 const isRainWarningPoint = (point: ChartPoint) => point.showRainRisk || point.alert === "rain";
 const isWindWarningPoint = (point: ChartPoint) => point.showWindRisk;
 
-const buildWarningSegments = (chartData: ChartPoint[], alert: WarningType, shouldInclude: (point: ChartPoint) => boolean) => {
+const buildWarningSegments = (
+  chartData: ChartPoint[],
+  alert: WarningType,
+  shouldInclude: (point: ChartPoint) => boolean,
+) => {
   const segments: WarningRange[] = [];
   let current: WarningRange | null = null;
 
@@ -295,8 +306,12 @@ const getRainSummary = (warning: WarningRange, chartData: ChartPoint[]): RainSum
   if (warning.alert !== "rain") return null;
   const warningPoints = chartData.slice(warning.startIndex, warning.endIndex + 1).filter(isRainWarningPoint);
   if (!warningPoints.length) return null;
-  const chanceValues = warningPoints.map((point) => point.precipProbability).filter((value): value is number => value != null);
-  const averageChance = chanceValues.length ? chanceValues.reduce((sum, value) => sum + value, 0) / chanceValues.length : null;
+  const chanceValues = warningPoints
+    .map((point) => point.precipProbability)
+    .filter((value): value is number => value != null);
+  const averageChance = chanceValues.length
+    ? chanceValues.reduce((sum, value) => sum + value, 0) / chanceValues.length
+    : null;
   const totalPrecip = warningPoints.reduce((total, point) => total + (point.precipInches ?? 0), 0);
   return { averageChance, totalPrecip };
 };

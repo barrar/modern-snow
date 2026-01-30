@@ -15,11 +15,19 @@ export type LocationMenuProps = {
   timeZoneValue: TimeZoneId;
 };
 
-export default function LocationMenu({ locations, states, stateValue, value, timeZoneOptions, timeZoneValue }: LocationMenuProps) {
+export default function LocationMenu({
+  locations,
+  states,
+  stateValue,
+  value,
+  timeZoneOptions,
+  timeZoneValue,
+}: LocationMenuProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const stateLocations = locations.filter((location) => location.state === stateValue);
-  const resolvedLocationValue = stateLocations.find((location) => location.id === value)?.id ?? stateLocations[0]?.id ?? value;
+  const resolvedLocationValue =
+    stateLocations.find((location) => location.id === value)?.id ?? stateLocations[0]?.id ?? value;
 
   const handleLocationChange = (event: SelectChangeEvent) => {
     const nextLocation = event.target.value;

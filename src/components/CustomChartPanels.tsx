@@ -5,7 +5,17 @@ import { chartColors, surfaceGradient } from "@/data/chartStyles";
 import { Box, Chip, Divider, Paper, Stack, Typography } from "@mui/material";
 import { Cloud, CloudRain, Droplets, Snowflake, Thermometer, Wind } from "lucide-react";
 import type { ReactNode } from "react";
-import { Bar, Cell, ComposedChart, LabelList, Line, ResponsiveContainer, XAxis, YAxis, type LabelProps } from "recharts";
+import {
+  Bar,
+  Cell,
+  ComposedChart,
+  LabelList,
+  Line,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  type LabelProps,
+} from "recharts";
 
 const panelSx = {
   p: { xs: 2, md: 3 },
@@ -103,9 +113,10 @@ const buildPrecipMetrics = (point: ChartPoint | null, placeholder: string): Metr
     icon: amountIcon,
   });
 
-  const chanceLabel = !point || hasSnowAmount(point) || point.precipitationType !== "rain" ? "Snow chance" : "Rain chance";
+  const chanceLabel =
+    !point || hasSnowAmount(point) || point.precipitationType !== "rain" ? "Snow chance" : "Rain chance";
   const chanceColor = point?.precipitationType === "rain" ? chartColors.rain : chartColors.snowHighChance;
-  const chanceValue = point ? `${hasAmount ? point.precipProbability ?? 0 : 0}%` : placeholder;
+  const chanceValue = point ? `${hasAmount ? (point.precipProbability ?? 0) : 0}%` : placeholder;
 
   metrics.push({
     key: "chance",
@@ -138,7 +149,9 @@ const resolveChartIndex = (payload: ChartInteractionPayload, chartData: ChartPoi
   }
   const payloadPoint = payload.activePayload?.[0]?.payload;
   if (!payloadPoint) return null;
-  const matchIndex = chartData.findIndex((point) => point.time === payloadPoint.time && point.startTime === payloadPoint.startTime);
+  const matchIndex = chartData.findIndex(
+    (point) => point.time === payloadPoint.time && point.startTime === payloadPoint.startTime,
+  );
   return matchIndex >= 0 ? matchIndex : null;
 };
 
@@ -396,7 +409,13 @@ const ChartSurface = ({
           />
           <YAxis yAxisId="snow" hide domain={[0, "auto"]} padding={{ top: 20 }} />
           <YAxis yAxisId="weather" hide domain={[0, 100]} />
-          <Bar yAxisId="weather" dataKey="precipProbabilityChart" name="Precip chance (%)" fill={chartColors.rain} barSize={22}>
+          <Bar
+            yAxisId="weather"
+            dataKey="precipProbabilityChart"
+            name="Precip chance (%)"
+            fill={chartColors.rain}
+            barSize={22}
+          >
             {chartData.map((point) => (
               <Cell key={`rain-${point.time}`} fill={chartColors.rain} />
             ))}

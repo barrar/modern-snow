@@ -391,4 +391,5 @@ export const getForecastLocation = (id?: string) => {
   return forecastLocations.find((location) => location.id === targetId) ?? forecastLocations[0];
 };
 
-export const getForecastLocationsForState = (stateId: ForecastState) => forecastLocations.filter((location) => location.state === stateId);
+export const getForecastLocationsForState = (stateId: ForecastState) =>
+  forecastLocations.filter((location) => location.state === stateId);
