@@ -7,13 +7,11 @@ import {
   getForecastLocation,
   getForecastLocationsForState,
 } from "@/data/forecastLocations";
-import { resolveTimeZoneId, timeZoneOptions } from "@/data/timeZones";
 import { Box, Button, Container, Paper, Stack, Typography } from "@mui/material";
 import { Suspense } from "react";
 
 type SearchParams = {
   location?: string | string[];
-  timezone?: string | string[];
 };
 
 type PageProps = {
@@ -24,12 +22,12 @@ const resolveParam = (value?: string | string[]) => (Array.isArray(value) ? valu
 
 const resolveForecastSelection = (searchParams?: SearchParams) => {
   const locationParam = resolveParam(searchParams?.location);
-  const timeZoneValue = resolveTimeZoneId(searchParams?.timezone);
   const locationFromParam = getForecastLocation(locationParam);
   const resolvedState = locationFromParam.state;
   const stateLocations = getForecastLocationsForState(resolvedState);
   const location =
     stateLocations.find((item) => item.id === locationFromParam.id) ?? stateLocations[0] ?? locationFromParam;
+  const timeZoneValue = location.timeZoneId;
 
   return {
     locationId: location.id,
@@ -39,8 +37,6 @@ const resolveForecastSelection = (searchParams?: SearchParams) => {
       states: forecastStates,
       stateValue: resolvedState,
       value: location.id,
-      timeZoneOptions,
-      timeZoneValue,
     },
   };
 };

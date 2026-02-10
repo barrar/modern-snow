@@ -11,7 +11,7 @@ Live demo: https://powdermeter.com
 - Flags rain and high-wind windows, summarizing each alert with average chance/precip totals or peak gusts.
 - Highlights bluebird windows when fresh powder clears without additional precip.
 - Renders an interactive chart with snowfall bars, weather overlays, warning bands, and rich tooltips.
-- Lets users pick a state, resort, and time zone (defaults to the browser time zone when available).
+- Lets users pick a state and resort, then formats time in the resort's local time zone.
 
 ## Tech Stack
 
@@ -28,10 +28,10 @@ Live demo: https://powdermeter.com
 - `src/app/page.tsx` — landing page shell + suspense boundary for the forecast
 - `src/components/SnowForecast.tsx` — server component that loads NOAA data and streams the client chart
 - `src/components/CustomChart.tsx` — client chart UI (warnings, bands, tooltip, chart config)
-- `src/components/LocationMenu.tsx` — state, resort, and time zone selectors
+- `src/components/LocationMenu.tsx` — state and resort selectors
 - `src/data/getWeatherData.tsx` — server-side fetch + normalization of NOAA forecast data
 - `src/data/forecastLocations.ts` — resort gridpoints grouped by state
-- `src/data/timeZones.ts` — time zone options + resolver
+- `src/data/timeZones.ts` — supported resort time zones
 
 ## Data Source & Caching
 
@@ -57,11 +57,11 @@ npm run build
 npm run start
 ```
 
-## Configuring Locations and Time Zones
+## Configuring Locations
 
 - Add or update resorts in `src/data/forecastLocations.ts`.
-- Adjust the selectable time zones in `src/data/timeZones.ts`.
-- Query params are supported: `?state=oregon&location=bachelor&timezone=America/Los_Angeles`.
+- Update the resort time zone mapping in `src/data/forecastLocations.ts` when adding new regions.
+- Query params are supported: `?location=bachelor`.
 
 ## License
 

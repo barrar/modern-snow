@@ -1,3 +1,5 @@
+import type { TimeZoneId } from "./timeZones";
+
 export type ForecastLocationId =
   | "bachelor"
   | "timberline"
@@ -62,6 +64,7 @@ export type ForecastLocation = {
   state: ForecastState;
   label: string;
   gridpoints: { office: string; x: number; y: number };
+  timeZoneId: TimeZoneId;
 };
 
 export const forecastStates: ForecastStateOption[] = [
@@ -74,7 +77,15 @@ export const forecastStates: ForecastStateOption[] = [
 
 export const defaultStateId: ForecastState = "oregon";
 
-export const forecastLocations: ForecastLocation[] = [
+const timeZoneByState: Record<ForecastState, TimeZoneId> = {
+  oregon: "America/Los_Angeles",
+  washington: "America/Los_Angeles",
+  california: "America/Los_Angeles",
+  utah: "America/Denver",
+  colorado: "America/Denver",
+};
+
+const baseForecastLocations: Array<Omit<ForecastLocation, "timeZoneId">> = [
   // Oregon
   {
     id: "bachelor",
@@ -381,6 +392,11 @@ export const forecastLocations: ForecastLocation[] = [
     gridpoints: { office: "GJT", x: 116, y: 49 },
   },
 ];
+
+export const forecastLocations: ForecastLocation[] = baseForecastLocations.map((location) => ({
+  ...location,
+  timeZoneId: timeZoneByState[location.state],
+}));
 
 export const defaultLocationId: ForecastLocationId = "bachelor";
 
