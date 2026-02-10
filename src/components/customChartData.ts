@@ -1,5 +1,5 @@
 import { chartColors } from "@/data/chartStyles";
-import type { ForecastPoint } from "@/data/getWeatherData";
+import type { ForecastPoint } from "@/data/weather/forecastTypes";
 import type { TimeZoneId } from "@/data/timeZones";
 
 const rainWarningThreshold = 10;

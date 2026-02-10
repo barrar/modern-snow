@@ -11,7 +11,7 @@ import {
   lineSeries,
 } from "@/components/customChartData";
 import { BluebirdPanel, ChartPanel, WarningsPanel } from "@/components/CustomChartPanels";
-import type { ForecastPoint } from "@/data/getWeatherData";
+import type { ForecastPoint } from "@/data/weather/forecastTypes";
 import type { TimeZoneId } from "@/data/timeZones";
 import { Grid, Stack, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";

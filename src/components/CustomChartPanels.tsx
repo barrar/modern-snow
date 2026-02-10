@@ -79,7 +79,6 @@ const resolveSnowBarColor = (point: ChartPoint) => {
   return chartColors.snowLowChance;
 };
 
-const hasSnowAmount = (point: ChartPoint | null) => (point?.inches ?? 0) > 0;
 type MetricItem = {
   key: string;
   label: string;

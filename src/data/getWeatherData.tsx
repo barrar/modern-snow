@@ -1,208 +1,73 @@
 "use server";
+
 import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import utc from "dayjs/plugin/utc";
-import { createClient } from "redis";
-import { getForecastLocation, type ForecastLocationId } from "./forecastLocations";
+import { getForecastLocation, type ForecastLocation, type ForecastLocationId } from "./forecastLocations";
+import { buildCacheKey, readCachedGridData, writeCachedGridData } from "./weather/cache";
+import type { ForecastPoint, NOAAValue } from "./weather/forecastTypes";
+import {
+  cToF,
+  fillNearest,
+  intervalStart,
+  kmhToMph,
+  mmToInches,
+  parseInterval,
+  parseNumber,
+} from "./weather/forecastUtils";
 
 dayjs.extend(utc);
-dayjs.extend(duration);
 
-const CACHE_TTL_SECONDS = 4 * 60 * 60; // 4 hours
+const NOAA_USER_AGENT = "(powdermeter.com, contact@powdermeter.com)";
 
-type RedisClient = ReturnType<typeof createClient>;
-
-let redisClient: RedisClient | null = null;
-let redisClientPromise: Promise<RedisClient | null> | null = null;
-
-const getRedisClient = async (): Promise<RedisClient | null> => {
-  const redisUrl = process.env.REDIS_ROSE_OCEAN_REDIS_URL;
-  if (!redisUrl) return null;
-  if (redisClient) return redisClient;
-  if (!redisClientPromise) {
-    const client = createClient({ url: redisUrl });
-    redisClientPromise = client
-      .connect()
-      .then(() => {
-        redisClient = client;
-        return client;
-      })
-      .catch((error) => {
-        redisClientPromise = null;
-        console.warn("Failed to connect to Redis", error);
-        return null;
-      });
-  }
-  return redisClientPromise;
+type NOAAResponse = {
+  properties?: {
+    snowfallAmount?: { values?: NOAAValue[] };
+    quantitativePrecipitation?: { values?: NOAAValue[] };
+    probabilityOfPrecipitation?: { values?: NOAAValue[] };
+    temperature?: { values?: NOAAValue[] };
+    windSpeed?: { values?: NOAAValue[] };
+    windGust?: { values?: NOAAValue[] };
+    skyCover?: { values?: NOAAValue[] };
+  };
 };
 
-type CachedGridData = {
-  data: unknown;
-};
-
-const buildCacheKey = (location: ReturnType<typeof getForecastLocation>) =>
-  `weather-grid:${location.gridpoints.office}:${location.gridpoints.x},${location.gridpoints.y}`;
-
-const readCachedGridData = async (cacheKey: string) => {
-  const client = await getRedisClient();
-  if (!client) return null;
-  try {
-    const cached = await client.get(cacheKey);
-    if (!cached) return null;
-    const parsed = JSON.parse(cached) as CachedGridData | unknown;
-    if (parsed && typeof parsed === "object" && "data" in parsed) {
-      const payload = parsed as CachedGridData;
-      if (payload.data == null) return null;
-      return payload.data;
-    }
-    return parsed;
-  } catch (error) {
-    console.warn("Redis cache read failed", error);
-    return null;
-  }
-};
-
-const writeCachedGridData = async (cacheKey: string, data: unknown) => {
-  const client = await getRedisClient();
-  if (!client) return;
-  try {
-    const payload: CachedGridData = { data };
-    await client.set(cacheKey, JSON.stringify(payload), {
-      expiration: { type: "EX", value: CACHE_TTL_SECONDS },
-    });
-  } catch (error) {
-    console.warn("Redis cache write failed", error);
-  }
-};
-
-type NOAAValue = { validTime: string; value: number | string | null };
-
-export type ForecastPoint = {
-  time: string;
-  startTime: string;
-  endTime: string;
-  inches: number | null;
-  precipInches: number | null;
-  precipProbability: number | null;
-  temperatureF: number | null;
-  windMph: number | null;
-  windGustMph: number | null;
-  cloudCover: number | null;
-  precipitationType: "snow" | "rain" | "none";
-  hasFreshPowder: boolean;
-  isBluebird: boolean;
-  alert: "rain" | null;
-};
-
-const parseNumber = (value: number | string | null | undefined) => {
-  if (value == null) return null;
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value !== "string") return null;
-  const matches = value.match(/-?\d+(\.\d+)?/g);
-  if (!matches) return null;
-  const numbers = matches.map((match) => Number(match)).filter((number) => Number.isFinite(number));
-  if (!numbers.length) return null;
-  if (numbers.length >= 2) {
-    return (numbers[0] + numbers[1]) / 2;
-  }
-  return numbers[0];
-};
-
-const mmToInches = (millimeters: number | string | null | undefined) => {
-  const numeric = parseNumber(millimeters);
-  if (numeric == null) return 0;
-  return Math.round(numeric * 0.0393701 * 100) / 100;
-};
-
-const parseInterval = (validTime: string) => {
-  const [start, endOrDuration] = validTime.split("/");
-  if (!endOrDuration) return { start, end: start };
-  if (endOrDuration.startsWith("P")) {
-    const end = dayjs.utc(start).add(dayjs.duration(endOrDuration)).toISOString();
-    return { start, end };
-  }
-  return { start, end: endOrDuration };
-};
-
-const intervalStart = (validTime: string) => parseInterval(validTime).start;
-const cToF = (celsius: number | null) => (celsius == null ? null : Math.round(((celsius * 9) / 5 + 32) * 10) / 10);
-const kmhToMph = (kmh: number | null) => (kmh == null ? null : Math.round(kmh * 0.621371 * 10) / 10);
-const fillNearest = (times: string[], values: Array<number | null>) => {
-  if (!values.length) return values;
-  const timeMs = times.map((time) => dayjs.utc(time).valueOf());
-  const prevValue: Array<number | null> = new Array(values.length).fill(null);
-  const prevTime: Array<number | null> = new Array(values.length).fill(null);
-  let lastValue: number | null = null;
-  let lastTime: number | null = null;
-  values.forEach((value, idx) => {
-    if (value != null) {
-      lastValue = value;
-      lastTime = timeMs[idx];
-    }
-    prevValue[idx] = lastValue;
-    prevTime[idx] = lastTime;
+const fetchGridpointData = async (location: ForecastLocation): Promise<NOAAResponse> => {
+  const url = `https://api.weather.gov/gridpoints/${location.gridpoints.office}/${location.gridpoints.x},${location.gridpoints.y}`;
+  const res = await fetch(url, {
+    headers: {
+      "user-agent": NOAA_USER_AGENT,
+    },
+    cache: "no-store",
   });
-
-  const nextValue: Array<number | null> = new Array(values.length).fill(null);
-  const nextTime: Array<number | null> = new Array(values.length).fill(null);
-  let upcomingValue: number | null = null;
-  let upcomingTime: number | null = null;
-  for (let idx = values.length - 1; idx >= 0; idx -= 1) {
-    if (values[idx] != null) {
-      upcomingValue = values[idx];
-      upcomingTime = timeMs[idx];
-    }
-    nextValue[idx] = upcomingValue;
-    nextTime[idx] = upcomingTime;
+  if (!res.ok) {
+    throw new Error(`Failed to fetch NOAA gridpoint data (${res.status} ${res.statusText})`);
   }
-
-  return values.map((value, idx) => {
-    if (value != null) return value;
-    const previous = prevValue[idx];
-    const next = nextValue[idx];
-    if (previous == null && next == null) return null;
-    if (previous == null) return next;
-    if (next == null) return previous;
-    const prevDistance = timeMs[idx] - (prevTime[idx] ?? timeMs[idx]);
-    const nextDistance = (nextTime[idx] ?? timeMs[idx]) - timeMs[idx];
-    return prevDistance <= nextDistance ? previous : next;
-  });
+  return (await res.json()) as NOAAResponse;
 };
 
 export async function getWeatherData(locationId?: ForecastLocationId): Promise<ForecastPoint[]> {
   const nowUtc = dayjs.utc();
   const location = getForecastLocation(locationId);
   const cacheKey = buildCacheKey(location);
-  const cachedData = await readCachedGridData(cacheKey);
-  const data =
-    cachedData ??
-    (await (async () => {
-      const res = await fetch(
-        `https://api.weather.gov/gridpoints/${location.gridpoints.office}/${location.gridpoints.x},${location.gridpoints.y}`,
-        {
-          headers: {
-            "user-agent": "(powdermeter.com, contact@powdermeter.com)",
-          },
-          cache: "no-store",
-        },
-      );
-      if (!res.ok) {
-        throw new Error("Failed to fetch data");
-      }
-      const json = await res.json();
-      await writeCachedGridData(cacheKey, json);
-      return json;
-    })());
+  const cachedData = await readCachedGridData<NOAAResponse>(cacheKey);
+  const data = cachedData ?? (await fetchGridpointData(location));
 
-  const snowfall = (data.properties.snowfallAmount?.values ?? []) as NOAAValue[];
-  const quantitativePrecip = (data.properties.quantitativePrecipitation?.values ?? []) as NOAAValue[];
-  const precipProbability = (data.properties.probabilityOfPrecipitation?.values ?? []) as NOAAValue[];
-  const temperature = (data.properties.temperature?.values ?? []) as NOAAValue[];
-  const windSpeed = (data.properties.windSpeed?.values ?? []) as NOAAValue[];
-  const windGust = (data.properties.windGust?.values ?? []) as NOAAValue[];
-  const skyCover = (data.properties.skyCover?.values ?? []) as NOAAValue[];
+  if (!cachedData) {
+    await writeCachedGridData(cacheKey, data);
+  }
+
+  const properties = data?.properties ?? {};
+  const snowfall = properties.snowfallAmount?.values ?? [];
+  const quantitativePrecip = properties.quantitativePrecipitation?.values ?? [];
+  const precipProbability = properties.probabilityOfPrecipitation?.values ?? [];
+  const temperature = properties.temperature?.values ?? [];
+  const windSpeed = properties.windSpeed?.values ?? [];
+  const windGust = properties.windGust?.values ?? [];
+  const skyCover = properties.skyCover?.values ?? [];
 
   const baseSeries = snowfall.length ? snowfall : temperature.length ? temperature : precipProbability;
+  if (!baseSeries.length) return [];
+
   const baseTimes = baseSeries.map((entry) => intervalStart(entry.validTime));
 
   const snowByStart = new Map<string, number | null>(
