@@ -113,22 +113,35 @@ const buildPrecipMetrics = (point: ChartPoint | null, placeholder: string): Metr
     icon: amountIcon,
   });
 
-  const chanceLabel =
-    !point || hasSnowAmount(point) || point.precipitationType !== "rain" ? "Snow chance" : "Rain chance";
-  const chanceColor = point?.precipitationType === "rain" ? chartColors.rain : chartColors.snowHighChance;
-  const chanceValue = point ? `${hasAmount ? (point.precipProbability ?? 0) : 0}%` : placeholder;
+  const snowChanceValue = !point
+    ? placeholder
+    : point.precipitationType === "snow"
+      ? `${point.precipProbability ?? 0}%`
+      : point.precipitationType === "none"
+        ? "0%"
+        : placeholder;
+  const rainChanceValue = !point
+    ? placeholder
+    : point.precipitationType === "rain"
+      ? `${point.precipProbability ?? 0}%`
+      : point.precipitationType === "none"
+        ? "0%"
+        : placeholder;
 
   metrics.push({
-    key: "chance",
-    label: chanceLabel,
-    value: chanceValue,
-    color: chanceColor,
-    icon:
-      point?.precipitationType === "rain" ? (
-        <Droplets size={18} color={chanceColor} strokeWidth={2.25} />
-      ) : (
-        <Snowflake size={18} color={chanceColor} strokeWidth={2.25} />
-      ),
+    key: "snow-chance",
+    label: "Snow chance",
+    value: snowChanceValue,
+    color: chartColors.snowHighChance,
+    icon: <Snowflake size={18} color={chartColors.snowHighChance} strokeWidth={2.25} />,
+  });
+
+  metrics.push({
+    key: "rain-chance",
+    label: "Rain chance",
+    value: rainChanceValue,
+    color: chartColors.rain,
+    icon: <Droplets size={18} color={chartColors.rain} strokeWidth={2.25} />,
   });
 
   return metrics;
