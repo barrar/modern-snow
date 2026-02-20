@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Box, Chip, Divider, Paper, Stack, Typography } from "@mui/material";
 import { Cloud, CloudRain, Thermometer, Wind } from "lucide-react";
 import { Bar, Cell, ComposedChart, LabelList, Line, ResponsiveContainer, XAxis, YAxis } from "recharts";
@@ -189,6 +190,148 @@ type ChartSurfaceProps = {
   onSelectPoint: (index: number) => void;
 };
 
+type ScrollMetrics = {
+  left: number;
+  viewportWidth: number;
+  contentWidth: number;
+  scrollable: boolean;
+};
+
+type DaySegment = {
+  key: string;
+  dayName: string;
+  startRatio: number;
+  endRatio: number;
+};
+
+const initialScrollMetrics: ScrollMetrics = {
+  left: 0,
+  viewportWidth: 0,
+  contentWidth: 0,
+  scrollable: false,
+};
+
+const buildDaySegments = (chartData: ChartPoint[]): DaySegment[] => {
+  if (!chartData.length) return [];
+
+  const groupedDays = chartData.reduce<
+    {
+      key: string;
+      dayName: string;
+      startIndex: number;
+      endIndex: number;
+    }[]
+  >((acc, point, index) => {
+    const previous = acc[acc.length - 1];
+    if (!previous || previous.key !== point.dateLabel) {
+      acc.push({
+        key: point.dateLabel,
+        dayName: point.dateLabel.split(",")[0] || point.dateLabel,
+        startIndex: index,
+        endIndex: index,
+      });
+      return acc;
+    }
+    previous.endIndex = index;
+    return acc;
+  }, []);
+
+  const totalPoints = chartData.length;
+  return groupedDays.map((group) => ({
+    key: group.key,
+    dayName: group.dayName,
+    startRatio: group.startIndex / totalPoints,
+    endRatio: (group.endIndex + 1) / totalPoints,
+  }));
+};
+
+type MobileScrollTimelineProps = {
+  chartData: ChartPoint[];
+  metrics: ScrollMetrics;
+  onJumpToRatio: (ratio: number) => void;
+};
+
+const MobileScrollTimeline = ({ chartData, metrics, onJumpToRatio }: MobileScrollTimelineProps) => {
+  const segments = buildDaySegments(chartData);
+  if (!metrics.scrollable || !segments.length) return null;
+
+  const safeContentWidth = metrics.contentWidth || 1;
+  const viewportRatio = Math.max(0, Math.min(1, metrics.viewportWidth / safeContentWidth));
+  const displayViewportRatio = Math.min(1, Math.max(viewportRatio, 0.14));
+  const viewportLeftRatio = Math.max(0, Math.min(1 - displayViewportRatio, metrics.left / safeContentWidth));
+
+  return (
+    <Stack spacing={0.6}>
+      <Box
+        aria-label="Scrollable chart day timeline"
+        onClick={(event) => {
+          const bounds = event.currentTarget.getBoundingClientRect();
+          if (!bounds.width) return;
+          const clickRatio = (event.clientX - bounds.left) / bounds.width;
+          onJumpToRatio(Math.max(0, Math.min(1, clickRatio)));
+        }}
+        sx={{
+          position: "relative",
+          height: 42,
+          borderRadius: 999,
+          overflow: "hidden",
+          bgcolor: "rgba(128, 150, 184, 0.2)",
+          border: "1px solid rgba(203, 213, 245, 0.3)",
+          cursor: "pointer",
+          userSelect: "none",
+        }}
+      >
+        {segments.map((segment, index) => (
+          <Box
+            key={segment.key}
+            sx={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: `${segment.startRatio * 100}%`,
+              width: `${(segment.endRatio - segment.startRatio) * 100}%`,
+              px: 0.6,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRight:
+                index === segments.length - 1 ? "none" : "1px solid rgba(203, 213, 245, 0.24)",
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "rgba(219, 234, 254, 0.95)",
+                fontWeight: 700,
+                fontSize: "0.64rem",
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
+                overflow: "hidden",
+              }}
+            >
+              {segment.dayName}
+            </Typography>
+          </Box>
+        ))}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 3,
+            bottom: 3,
+            left: `${viewportLeftRatio * 100}%`,
+            width: `${displayViewportRatio * 100}%`,
+            borderRadius: 999,
+            border: "2px solid rgba(165, 208, 255, 1)",
+            bgcolor: "rgba(59, 130, 246, 0.18)",
+            boxShadow: "0 0 0 1px rgba(6, 12, 28, 0.35) inset",
+            pointerEvents: "none",
+          }}
+        />
+      </Box>
+    </Stack>
+  );
+};
+
 const ChartSurface = ({
   chartData,
   xAxisTicks,
@@ -198,117 +341,198 @@ const ChartSurface = ({
   chartMargin,
   lineSeries,
   onSelectPoint,
-}: ChartSurfaceProps) => (
-  <Box
-    sx={{
-      width: "100%",
-      overflowX: isMobile ? "auto" : "visible",
-      WebkitOverflowScrolling: "touch",
-    }}
-  >
-    <Box
-      sx={{
-        position: "relative",
-        height: chartHeight,
-        minHeight: chartHeight,
-        width: "100%",
-        userSelect: "none",
-        WebkitUserSelect: "none",
-        WebkitTapHighlightColor: "transparent",
-        "& .recharts-wrapper": {
-          outline: "none",
-        },
-        "& .recharts-surface": {
-          outline: "none",
-        },
-        "& .recharts-surface *": {
-          outline: "none",
-        },
-        "& .recharts-layer": {
-          outline: "none",
-        },
-        "& .recharts-rectangle": {
-          outline: "none",
-        },
-        "& .recharts-bar-rectangle": {
-          outline: "none",
-        },
-        "& .recharts-dot": {
-          outline: "none",
-        },
-        "& .recharts-active-dot": {
-          outline: "none",
-        },
-        "& .recharts-line-dot": {
-          outline: "none",
-        },
-      }}
-    >
-      <ResponsiveContainer width="100%" height={chartHeight} minHeight={chartHeight} minWidth={750}>
-        <ComposedChart
-          data={chartData}
-          margin={chartMargin}
-          barGap={-16}
-          barCategoryGap="30%"
-          onMouseMove={(event) => {
-            const index = resolveChartIndex(event as ChartInteractionPayload, chartData);
-            if (index != null) onSelectPoint(index);
-          }}
-          onClick={(event) => {
-            if (!onSelectPoint) return;
-            const index = resolveChartIndex(event as ChartInteractionPayload, chartData);
-            if (index != null) onSelectPoint(index);
+}: ChartSurfaceProps) => {
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [scrollMetrics, setScrollMetrics] = useState<ScrollMetrics>(initialScrollMetrics);
+
+  const syncScrollMetrics = () => {
+    const element = scrollContainerRef.current;
+    if (!element) return;
+
+    const nextMetrics: ScrollMetrics = {
+      left: element.scrollLeft,
+      viewportWidth: element.clientWidth,
+      contentWidth: element.scrollWidth,
+      scrollable: element.scrollWidth - element.clientWidth > 2,
+    };
+
+    setScrollMetrics((previous) => {
+      if (
+        Math.abs(previous.left - nextMetrics.left) < 1 &&
+        previous.viewportWidth === nextMetrics.viewportWidth &&
+        previous.contentWidth === nextMetrics.contentWidth &&
+        previous.scrollable === nextMetrics.scrollable
+      ) {
+        return previous;
+      }
+      return nextMetrics;
+    });
+  };
+
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const rafId = window.requestAnimationFrame(syncScrollMetrics);
+    const resizeObserver = new ResizeObserver(() => {
+      syncScrollMetrics();
+    });
+
+    resizeObserver.observe(container);
+    if (container.firstElementChild) {
+      resizeObserver.observe(container.firstElementChild);
+    }
+
+    window.addEventListener("resize", syncScrollMetrics);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", syncScrollMetrics);
+    };
+  }, [isMobile, chartData.length, chartHeight]);
+
+  return (
+    <Stack spacing={isMobile ? 1 : 0}>
+      <Box
+        ref={scrollContainerRef}
+        onScroll={() => {
+          if (isMobile) syncScrollMetrics();
+        }}
+        sx={{
+          width: "100%",
+          overflowX: isMobile ? "auto" : "visible",
+          overflowY: "hidden",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: isMobile ? "none" : "auto",
+          "&::-webkit-scrollbar": {
+            display: isMobile ? "none" : "block",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: "relative",
+            height: chartHeight,
+            minHeight: chartHeight,
+            width: "100%",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            WebkitTapHighlightColor: "transparent",
+            "& .recharts-wrapper": {
+              outline: "none",
+            },
+            "& .recharts-surface": {
+              outline: "none",
+            },
+            "& .recharts-surface *": {
+              outline: "none",
+            },
+            "& .recharts-layer": {
+              outline: "none",
+            },
+            "& .recharts-rectangle": {
+              outline: "none",
+            },
+            "& .recharts-bar-rectangle": {
+              outline: "none",
+            },
+            "& .recharts-dot": {
+              outline: "none",
+            },
+            "& .recharts-active-dot": {
+              outline: "none",
+            },
+            "& .recharts-line-dot": {
+              outline: "none",
+            },
           }}
         >
-          <XAxis
-            dataKey="time"
-            ticks={xAxisTicks}
-            tickFormatter={(value) => dayFormatter.format(new Date(String(value)))}
-            tick={{
-              fill: "rgba(215, 227, 255, 1)",
-              fontSize: isMobile ? 10 : 12,
-              fontWeight: 600,
-            }}
-            tickMargin={isMobile ? 8 : 12}
-            axisLine={{ stroke: "rgba(203, 213, 245, 0.35)" }}
-            tickLine={{ stroke: "rgba(203, 213, 245, 0.35)" }}
-          />
-          <YAxis yAxisId="snow" hide domain={[0, "auto"]} padding={{ top: 20 }} />
-          <YAxis yAxisId="weather" hide domain={[0, 100]} />
-          <Bar
-            yAxisId="weather"
-            dataKey="precipProbabilityChart"
-            name="Precip chance (%)"
-            fill={chartColors.rain}
-            barSize={22}
-          >
-            {chartData.map((point) => (
-              <Cell key={`rain-${point.time}`} fill={chartColors.rain} />
-            ))}
-          </Bar>
-          {lineSeries.map((series) => (
-            <Line
-              key={series.id}
-              yAxisId="weather"
-              type="linear"
-              dataKey={series.dataKey}
-              name={series.label}
-              stroke={series.color}
-              strokeWidth={2}
-              dot={false}
-            />
-          ))}
-          <Bar yAxisId="snow" dataKey="snowChart" name="Snow (in)" fill={chartColors.snow} barSize={22}>
-            {chartData.map((point) => (
-              <Cell key={point.time} fill={resolveSnowBarColor(point)} />
-            ))}
-            <LabelList dataKey="snowChart" content={renderSnowLabel} />
-          </Bar>
-        </ComposedChart>
-      </ResponsiveContainer>
-    </Box>
-  </Box>
-);
+          <ResponsiveContainer width="100%" height={chartHeight} minHeight={chartHeight} minWidth={750}>
+            <ComposedChart
+              data={chartData}
+              margin={chartMargin}
+              barGap={-16}
+              barCategoryGap="30%"
+              onMouseMove={(event) => {
+                const index = resolveChartIndex(event as ChartInteractionPayload, chartData);
+                if (index != null) onSelectPoint(index);
+              }}
+              onClick={(event) => {
+                if (!onSelectPoint) return;
+                const index = resolveChartIndex(event as ChartInteractionPayload, chartData);
+                if (index != null) onSelectPoint(index);
+              }}
+            >
+              <XAxis
+                dataKey="time"
+                ticks={xAxisTicks}
+                tickFormatter={(value) => dayFormatter.format(new Date(String(value)))}
+                tick={{
+                  fill: "rgba(215, 227, 255, 1)",
+                  fontSize: isMobile ? 10 : 12,
+                  fontWeight: 600,
+                }}
+                tickMargin={isMobile ? 8 : 12}
+                axisLine={{ stroke: "rgba(203, 213, 245, 0.35)" }}
+                tickLine={{ stroke: "rgba(203, 213, 245, 0.35)" }}
+              />
+              <YAxis yAxisId="snow" hide domain={[0, "auto"]} padding={{ top: 20 }} />
+              <YAxis yAxisId="weather" hide domain={[0, 100]} />
+              <Bar
+                yAxisId="weather"
+                dataKey="precipProbabilityChart"
+                name="Precip chance (%)"
+                fill={chartColors.rain}
+                barSize={22}
+              >
+                {chartData.map((point) => (
+                  <Cell key={`rain-${point.time}`} fill={chartColors.rain} />
+                ))}
+              </Bar>
+              {lineSeries.map((series) => (
+                <Line
+                  key={series.id}
+                  yAxisId="weather"
+                  type="linear"
+                  dataKey={series.dataKey}
+                  name={series.label}
+                  stroke={series.color}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              ))}
+              <Bar yAxisId="snow" dataKey="snowChart" name="Snow (in)" fill={chartColors.snow} barSize={22}>
+                {chartData.map((point) => (
+                  <Cell key={point.time} fill={resolveSnowBarColor(point)} />
+                ))}
+                <LabelList dataKey="snowChart" content={renderSnowLabel} />
+              </Bar>
+            </ComposedChart>
+          </ResponsiveContainer>
+        </Box>
+      </Box>
+      {isMobile ? (
+        <MobileScrollTimeline
+          chartData={chartData}
+          metrics={scrollMetrics}
+          onJumpToRatio={(ratio) => {
+            const container = scrollContainerRef.current;
+            if (!container) return;
+            const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+            const target = ratio * container.scrollWidth - container.clientWidth / 2;
+            container.scrollTo({
+              left: Math.max(0, Math.min(maxScrollLeft, target)),
+              behavior: "smooth",
+            });
+          }}
+        />
+      ) : null}
+    </Stack>
+  );
+};
 
 type ChartPanelProps = {
   chartData: ChartPoint[];
